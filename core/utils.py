@@ -3,14 +3,17 @@ from django.conf import settings
 
 
 def send_booking_confirmation_email(appointment):
-    if not appointment.patient.email:
+    patient_email = appointment.patient.email
+
+    if not patient_email:
+        print("Patient email is empty. Mail not sent.")
         return False
 
-    subject = "Appointment Booking Confirmation"
+    subject = "Appointment Confirmed"
     message = f"""
 Hello {appointment.patient.first_name or appointment.patient.username},
 
-Your appointment has been booked successfully.
+Your appointment has been confirmed successfully.
 
 Doctor: Dr. {appointment.doctor.first_name or appointment.doctor.username}
 Date: {appointment.appointment_date}
@@ -18,21 +21,30 @@ Time: {appointment.appointment_time}
 Reason: {appointment.reason}
 Status: {appointment.status}
 
-Thank you.
+Thank you,
+Hospital Management Team
 """
 
-    send_mail(
-        subject,
-        message,
-        settings.DEFAULT_FROM_EMAIL,
-        [appointment.patient.email],
-        fail_silently=False,
-    )
-    return True
+    try:
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [patient_email],
+            fail_silently=False,
+        )
+        print(f"Confirmation email sent to {patient_email}")
+        return True
+    except Exception as e:
+        print("Email sending error:", e)
+        return False
 
 
 def send_reminder_email(appointment):
-    if not appointment.patient.email:
+    patient_email = appointment.patient.email
+
+    if not patient_email:
+        print("Patient email is empty. Reminder not sent.")
         return False
 
     subject = "Appointment Reminder - 5 Minutes Left"
@@ -48,14 +60,20 @@ Reason: {appointment.reason}
 
 Please be ready.
 
-Thank you.
+Thank you,
+Hospital Management Team
 """
 
-    send_mail(
-        subject,
-        message,
-        settings.DEFAULT_FROM_EMAIL,
-        [appointment.patient.email],
-        fail_silently=False,
-    )
-    return True
+    try:
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [patient_email],
+            fail_silently=False,
+        )
+        print(f"Reminder email sent to {patient_email}")
+        return True
+    except Exception as e:
+        print("Reminder email sending error:", e)
+        return False

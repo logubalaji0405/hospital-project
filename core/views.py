@@ -287,22 +287,17 @@ def confirm_booking(request, appointment_id):
         id=appointment_id,
         doctor=request.user
     )
+
     appointment.status = 'confirmed'
     appointment.reminder_sent = False
     appointment.save()
 
-    email_ok = False
-
-    try:
-        send_booking_confirmation_email(appointment)
-        email_ok = True
-    except Exception as e:
-        print("Confirmation email failed:", e)
+    email_ok = send_booking_confirmation_email(appointment)
 
     if email_ok:
-        messages.success(request, "Appointment confirmed. Email sent.")
+        messages.success(request, "Appointment confirmed and email sent successfully.")
     else:
-        messages.success(request, "Appointment confirmed, but email was not sent.")
+        messages.warning(request, "Appointment confirmed, but email was not sent. Check email settings.")
 
     return redirect('doctor_dashboard')
 
