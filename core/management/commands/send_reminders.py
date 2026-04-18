@@ -1,5 +1,4 @@
-from datetime import datetime, timedelta
-
+from datetime import datetime
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
@@ -8,52 +7,54 @@ from core.utils import send_reminder_email
 
 
 class Command(BaseCommand):
-    help = "Send reminder emails 5 minutes before appointment"
+    help = "Send reminder emails before appointment"
 
     def handle(self, *args, **kwargs):
         now = timezone.localtime()
-        target_start = now + timedelta(minutes=3)
-        target_end = now + timedelta(minutes=7)
 
-        self.stdout.write(f"Current time: {now}")
-        self.stdout.write(f"Checking appointments between: {target_start} and {target_end}")
+        print("\n⏰ Current Time:", now)
 
         appointments = Appointment.objects.filter(
             status='confirmed',
-            reminder_sent=False
-        ).select_related('patient', 'doctor')
+            reminder_sent=False,
+            appointment_date=now.date()
+        )
 
         found = 0
         sent = 0
 
-        for appointment in appointments:
-            appointment_datetime = datetime.combine(
-                appointment.appointment_date,
-                appointment.appointment_time
+        for a in appointments:
+            appointment_time = datetime.combine(
+                a.appointment_date,
+                a.appointment_time
             )
 
-            current_tz = timezone.get_current_timezone()
-            appointment_datetime = timezone.make_aware(appointment_datetime, current_tz)
+            appointment_time = timezone.make_aware(
+                appointment_time,
+                timezone.get_current_timezone()
+            )
 
-            if target_start <= appointment_datetime <= target_end:
+            minutes_left = (appointment_time - now).total_seconds() / 60
+
+            print(f"\n📌 Appointment ID: {a.id}")
+            print("Time:", appointment_time)
+            print("Minutes left:", minutes_left)
+            print("Status:", a.status)
+            print("Reminder sent:", a.reminder_sent)
+
+            # ✅ MAIN CONDITION
+            if 0 < minutes_left <= 5:
                 found += 1
-                try:
-                    send_reminder_email(appointment)
-                    appointment.reminder_sent = True
-                    appointment.save()
 
+                ok = send_reminder_email(a)
+
+                if ok:
+                    a.reminder_sent = True
+                    a.save()
                     sent += 1
-                    self.stdout.write(
-                        self.style.SUCCESS(
-                            f"Reminder sent for appointment #{appointment.id} to {appointment.patient.email}"
-                        )
-                    )
-                except Exception as e:
-                    self.stdout.write(
-                        self.style.ERROR(
-                            f"Failed to send reminder for appointment #{appointment.id}: {str(e)}"
-                        )
-                    )
+                    print("✅ Reminder sent successfully")
+                else:
+                    print("❌ Failed to send")
 
-        self.stdout.write(self.style.SUCCESS(f"Matching appointments found: {found}"))
-        self.stdout.write(self.style.SUCCESS(f"Reminders sent: {sent}"))
+        print("\n🔍 Matching:", found)
+        print("📧 Sent:", sent)
