@@ -573,8 +573,8 @@ def run_reminders(request):
         print(f"Status: {appointment.status}")
         print(f"Reminder sent: {appointment.reminder_sent}")
 
-        # Wider window for better reliability on free hosting
-        if 0 < minutes_left <= 10:
+        # Use 15 minutes to avoid misses caused by free-host wake delays
+        if 0 < minutes_left <= 15:
             found += 1
 
             ok = send_reminder_email(appointment)

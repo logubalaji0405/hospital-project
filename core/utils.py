@@ -48,6 +48,7 @@ Healix Hospital Management System
         return False
 
 
+
 def send_reminder_email(appointment):
     patient_email = appointment.patient.email
 
