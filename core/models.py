@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-
+from django.core.exceptions import ValidationError
 
 class Profile(models.Model):
     ROLE_CHOICES = (
@@ -45,6 +45,7 @@ class Appointment(models.Model):
     appointment_date = models.DateField()
     appointment_time = models.TimeField()
     reason = models.TextField()
+    branch = models.ForeignKey('Branch', on_delete=models.CASCADE, null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -102,6 +103,10 @@ class Branch(models.Model):
     map_embed_url = models.URLField(help_text="Paste Google Maps embed URL")
     image = models.ImageField(upload_to='branches/', blank=True, null=True)
     is_active = models.BooleanField(default=True)
-
+    def clean(self):
+        if self.map_embed_url and "google.com/maps/embed" not in self.map_embed_url:
+            raise ValidationError({
+                "map_embed_url": "Please paste a valid Google Maps embed URL."
+            })
     def __str__(self):
         return f"{self.name} - {self.city}"

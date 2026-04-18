@@ -204,23 +204,23 @@
                                 </div>
 
                                 <div class="map-box mt-3">
-                                    <iframe
-                                        src="{{ branch.map_embed_url }}"
-                                        width="100%"
-                                        height="220"
-                                        style="border:0;"
-                                        allowfullscreen=""
-                                        loading="lazy"
-                                        referrerpolicy="no-referrer-when-downgrade">
-                                    </iframe>
+
+                                   
+                                    <!-- FALLBACK BUTTON -->
+                                    <a href="https://www.google.com/maps/search/?api=1&query={{ branch.address|urlencode }}"
+                                       target="_blank"
+                                       class="btn btn-outline-primary btn-sm mt-2 w-100">
+                                        Open in Google Maps
+                                    </a>
+
                                 </div>
 
-                                <div class="mt-4">
-                                    <a href="{% url 'book_appointment' %}?branch={{ branch.name|urlencode }}"
-                                       class="btn btn-primary branch-btn">
-                                        Book Appointment
-                                    </a>
-                                </div>
+                                <!-- BOOK BUTTON -->
+                                <a href="{% url 'book_appointment' %}?branch={{ branch.name|urlencode }}"
+                                   class="btn btn-primary mt-3 w-100">
+                                   Book Appointment
+                                </a>
+                                
                             </div>
                         </div>
                     </div>

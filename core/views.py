@@ -220,56 +220,43 @@ def admin_dashboard(request):
     })
 
 
-@login_required
 def book_appointment(request):
-    doctors = User.objects.filter(
-        profile__role='doctor',
-        profile__is_approved=True
-    ).select_related('profile')
+    doctors = User.objects.filter(profile__role='doctor')
+    branches = Branch.objects.filter(is_active=True)
+    selected_branch = request.GET.get('branch', '')
 
     if request.method == 'POST':
         doctor_id = request.POST.get('doctor')
+        branch_id = request.POST.get('branch')
         appointment_date = request.POST.get('appointment_date')
         appointment_time = request.POST.get('appointment_time')
         reason = request.POST.get('reason')
 
-        if not doctor_id or not appointment_date or not appointment_time or not reason:
-            messages.error(request, "All fields are required.")
-            return render(request, 'book_appointment.html', {'doctors': doctors})
+        if not doctor_id or not branch_id or not appointment_date or not appointment_time or not reason:
+            messages.error(request, "Please fill all fields.")
+            return redirect('book_appointment')
 
-        try:
-            doctor = User.objects.get(
-                id=doctor_id,
-                profile__role='doctor',
-                profile__is_approved=True
-            )
+        doctor = User.objects.get(id=doctor_id)
+        branch = Branch.objects.get(id=branch_id)
 
-            appointment = Appointment.objects.create(
-                patient=request.user,
-                doctor=doctor,
-                appointment_date=appointment_date,
-                appointment_time=appointment_time,
-                reason=reason,
-                status='pending',
-                reminder_sent=False
-            )
+        Appointment.objects.create(
+            patient=request.user,
+            doctor=doctor,
+            branch=branch,
+            appointment_date=appointment_date,
+            appointment_time=appointment_time,
+            reason=reason,
+            status='pending'
+        )
 
-            try:
-                send_booking_confirmation_email(appointment)
-                messages.success(request, "Appointment booked successfully. Confirmation email sent.")
-            except Exception as e:
-                print("Booking confirmation email failed:", e)
-                messages.success(request, "Appointment booked successfully, but email was not sent.")
+        messages.success(request, "Appointment booked successfully.")
+        return redirect('booking_history')
 
-            return redirect('booking_history')
-
-        except User.DoesNotExist:
-            messages.error(request, "Doctor not found.")
-        except Exception as e:
-            messages.error(request, f"Booking failed: {str(e)}")
-
-    return render(request, 'book_appointment.html', {'doctors': doctors})
-
+    return render(request, 'book_appointment.html', {
+        'doctors': doctors,
+        'branches': branches,
+        'selected_branch': selected_branch,
+    })
 
 @login_required
 def booking_history(request):
