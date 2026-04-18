@@ -55,12 +55,12 @@ def send_reminder_email(appointment):
         print("No patient email found for reminder")
         return False
 
-    subject = "Reminder: Your Appointment Starts in 5 Minutes ⏰"
+    subject = "Reminder: Your Appointment Starts Soon ⏰"
 
     message = f"""
 Hello {appointment.patient.first_name or appointment.patient.username},
 
-This is a friendly reminder that your appointment will begin in 5 minutes.
+This is a friendly reminder that your appointment will begin shortly.
 
 Appointment Details
 -------------------

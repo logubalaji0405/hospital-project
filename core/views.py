@@ -9,7 +9,10 @@ from django.http import JsonResponse, HttpResponseForbidden
 
 from .models import Profile, Appointment, ChatMessage, ChatRoom, Feedback
 from .utils import send_booking_confirmation_email
-
+from datetime import datetime
+from django.http import HttpResponse
+from django.utils import timezone
+from .utils import send_reminder_email
 
 def home(request):
     return render(request, 'home.html')
@@ -531,17 +534,10 @@ def feedback_list(request):
     feedbacks = Feedback.objects.select_related('patient').order_by('-created_at')
     return render(request, 'feedback_list.html', {'feedbacks': feedbacks})
 
-
-from datetime import datetime
-from django.http import HttpResponse
-from django.utils import timezone
-
-from .models import Appointment
-from .utils import send_reminder_email
-
 def run_reminders(request):
-    secret = request.GET.get("key")
-    if secret != "mysecret123":
+    secret_key = request.GET.get("key")
+
+    if secret_key != "mysecret123":
         return HttpResponse("Unauthorized", status=403)
 
     now = timezone.localtime()
@@ -560,6 +556,7 @@ def run_reminders(request):
             appointment.appointment_date,
             appointment.appointment_time
         )
+
         appointment_datetime = timezone.make_aware(
             appointment_datetime,
             timezone.get_current_timezone()
@@ -567,12 +564,27 @@ def run_reminders(request):
 
         minutes_left = (appointment_datetime - now).total_seconds() / 60
 
+        print(f"Appointment ID: {appointment.id}")
+        print(f"Patient: {appointment.patient.username}")
+        print(f"Email: {appointment.patient.email}")
+        print(f"Appointment time: {appointment_datetime}")
+        print(f"Current time: {now}")
+        print(f"Minutes left: {minutes_left}")
+        print(f"Status: {appointment.status}")
+        print(f"Reminder sent: {appointment.reminder_sent}")
+
+        # Wider window for better reliability on free hosting
         if 0 < minutes_left <= 10:
             found += 1
+
             ok = send_reminder_email(appointment)
+
             if ok:
                 appointment.reminder_sent = True
                 appointment.save()
                 sent += 1
+                print(f"Reminder sent for appointment #{appointment.id}")
+            else:
+                print(f"Reminder failed for appointment #{appointment.id}")
 
-    return HttpResponse(f"Matching: {found}, Sent: {sent}")
+    return HttpResponse(f"Matching appointments found: {found}, Reminders sent: {sent}")

@@ -1,13 +1,8 @@
 from django.urls import path
-from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
     path('', views.home, name='home'),
-    path('about/', views.about, name='about'),
-    
-    path('feedbacks/', views.feedback_list, name='feedback_list'),
-
     path('register/', views.register_view, name='register'),
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
@@ -26,11 +21,16 @@ urlpatterns = [
 
     path('approve-doctor/<int:profile_id>/', views.approve_doctor, name='approve_doctor'),
 
-    path('doctors/', views.doctor_list, name='doctor_list'),
-    path('start-chat/<int:doctor_id>/', views.start_chat, name='start_chat'),
+    path('doctor-list/', views.doctor_list, name='doctor_list'),
+    path('chat/start/<int:doctor_id>/', views.start_chat, name='start_chat'),
     path('my-chats/', views.my_chats, name='my_chats'),
     path('chat-room/<int:room_id>/', views.chat_room, name='chat_room'),
-    path('chat-room/<int:room_id>/messages/', views.get_messages, name='get_messages'),
-    path('chat-room/<int:room_id>/send/', views.send_message, name='send_message'),
+    path('get-messages/<int:room_id>/', views.get_messages, name='get_messages'),
+    path('send-message/<int:room_id>/', views.send_message, name='send_message'),
     path('chat-notification-count/', views.chat_notification_count, name='chat_notification_count'),
+
+    path('about/', views.about, name='about'),
+    path('feedbacks/', views.feedback_list, name='feedback_list'),
+
+    path('run-reminders/', views.run_reminders, name='run_reminders'),
 ]
