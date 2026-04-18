@@ -530,3 +530,49 @@ def feedback_list(request):
 
     feedbacks = Feedback.objects.select_related('patient').order_by('-created_at')
     return render(request, 'feedback_list.html', {'feedbacks': feedbacks})
+
+
+from datetime import datetime
+from django.http import HttpResponse
+from django.utils import timezone
+
+from .models import Appointment
+from .utils import send_reminder_email
+
+def run_reminders(request):
+    secret = request.GET.get("key")
+    if secret != "mysecret123":
+        return HttpResponse("Unauthorized", status=403)
+
+    now = timezone.localtime()
+
+    appointments = Appointment.objects.filter(
+        status='confirmed',
+        reminder_sent=False,
+        appointment_date=now.date()
+    ).select_related('patient', 'doctor')
+
+    found = 0
+    sent = 0
+
+    for appointment in appointments:
+        appointment_datetime = datetime.combine(
+            appointment.appointment_date,
+            appointment.appointment_time
+        )
+        appointment_datetime = timezone.make_aware(
+            appointment_datetime,
+            timezone.get_current_timezone()
+        )
+
+        minutes_left = (appointment_datetime - now).total_seconds() / 60
+
+        if 0 < minutes_left <= 10:
+            found += 1
+            ok = send_reminder_email(appointment)
+            if ok:
+                appointment.reminder_sent = True
+                appointment.save()
+                sent += 1
+
+    return HttpResponse(f"Matching: {found}, Sent: {sent}")
