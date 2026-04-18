@@ -534,6 +534,7 @@ def feedback_list(request):
     feedbacks = Feedback.objects.select_related('patient').order_by('-created_at')
     return render(request, 'feedback_list.html', {'feedbacks': feedbacks})
 
+
 def run_reminders(request):
     secret_key = request.GET.get("key")
 
@@ -564,16 +565,12 @@ def run_reminders(request):
 
         minutes_left = (appointment_datetime - now).total_seconds() / 60
 
-        print(f"Appointment ID: {appointment.id}")
-        print(f"Patient: {appointment.patient.username}")
-        print(f"Email: {appointment.patient.email}")
-        print(f"Appointment time: {appointment_datetime}")
-        print(f"Current time: {now}")
-        print(f"Minutes left: {minutes_left}")
-        print(f"Status: {appointment.status}")
-        print(f"Reminder sent: {appointment.reminder_sent}")
+        print("Appointment ID:", appointment.id)
+        print("Minutes left:", minutes_left)
+        print("Status:", appointment.status)
+        print("Reminder sent:", appointment.reminder_sent)
+        print("Patient email:", appointment.patient.email)
 
-        # Use 15 minutes to avoid misses caused by free-host wake delays
         if 0 < minutes_left <= 15:
             found += 1
 
