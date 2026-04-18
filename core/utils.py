@@ -6,23 +6,23 @@ def send_booking_confirmation_email(appointment):
     patient_email = appointment.patient.email
 
     if not patient_email:
-        print("Patient email is empty. Mail not sent.")
+        print("❌ Patient email missing")
         return False
 
     subject = "Appointment Confirmed"
+
     message = f"""
 Hello {appointment.patient.first_name or appointment.patient.username},
 
-Your appointment has been confirmed successfully.
+Your appointment has been CONFIRMED.
 
 Doctor: Dr. {appointment.doctor.first_name or appointment.doctor.username}
 Date: {appointment.appointment_date}
 Time: {appointment.appointment_time}
 Reason: {appointment.reason}
-Status: {appointment.status}
 
 Thank you,
-Hospital Management Team
+Hospital Team
 """
 
     try:
@@ -33,10 +33,11 @@ Hospital Management Team
             [patient_email],
             fail_silently=False,
         )
-        print(f"Confirmation email sent to {patient_email}")
+        print("✅ Email sent to:", patient_email)
         return True
+
     except Exception as e:
-        print("Email sending error:", e)
+        print("❌ Email error:", e)
         return False
 
 
@@ -44,24 +45,23 @@ def send_reminder_email(appointment):
     patient_email = appointment.patient.email
 
     if not patient_email:
-        print("Patient email is empty. Reminder not sent.")
+        print("❌ No email for reminder")
         return False
 
-    subject = "Appointment Reminder - 5 Minutes Left"
+    subject = "Reminder: Appointment in 5 Minutes"
+
     message = f"""
 Hello {appointment.patient.first_name or appointment.patient.username},
 
-This is a reminder that your appointment will start in 5 minutes.
+Your appointment will start in 5 minutes.
 
 Doctor: Dr. {appointment.doctor.first_name or appointment.doctor.username}
-Date: {appointment.appointment_date}
 Time: {appointment.appointment_time}
-Reason: {appointment.reason}
 
 Please be ready.
 
-Thank you,
-Hospital Management Team
+Thanks,
+Hospital Team
 """
 
     try:
@@ -72,8 +72,9 @@ Hospital Management Team
             [patient_email],
             fail_silently=False,
         )
-        print(f"Reminder email sent to {patient_email}")
+        print("✅ Reminder sent")
         return True
+
     except Exception as e:
-        print("Reminder email sending error:", e)
+        print("❌ Reminder error:", e)
         return False

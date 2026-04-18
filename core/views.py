@@ -279,6 +279,7 @@ def booking_history(request):
 @login_required
 def confirm_booking(request, appointment_id):
     profile = get_object_or_404(Profile, user=request.user)
+
     if profile.role != 'doctor':
         return redirect('home')
 
@@ -292,15 +293,18 @@ def confirm_booking(request, appointment_id):
     appointment.reminder_sent = False
     appointment.save()
 
+    print("👉 Confirm clicked")
+    print("👉 Patient email:", appointment.patient.email)
+
     email_ok = send_booking_confirmation_email(appointment)
 
     if email_ok:
-        messages.success(request, "Appointment confirmed and email sent successfully.")
+        messages.success(request, "✅ Appointment confirmed & email sent")
     else:
-        messages.warning(request, "Appointment confirmed, but email was not sent. Check email settings.")
+        messages.warning(request, "⚠️ Appointment confirmed but email failed")
 
     return redirect('doctor_dashboard')
-
+    
 
 @login_required
 def reject_booking(request, appointment_id):
