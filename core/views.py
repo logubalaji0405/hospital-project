@@ -8,6 +8,7 @@ from django.views.decorators.http import require_GET, require_POST
 from django.http import JsonResponse, HttpResponseForbidden
 
 from .models import Profile, Appointment, ChatMessage, ChatRoom, Feedback
+from .utils import send_booking_confirmation_email
 
 
 def home(request):
@@ -105,7 +106,6 @@ def logout_view(request):
     return redirect('login')
 
 
-
 @login_required
 def profile_view(request):
     profile = get_object_or_404(Profile, user=request.user)
@@ -151,8 +151,12 @@ def patient_dashboard(request):
 
     total_doctors = Profile.objects.filter(role='doctor', is_approved=True).count()
     my_bookings = Appointment.objects.filter(patient=request.user).count()
-    upcoming = Appointment.objects.filter(patient=request.user).order_by('appointment_date', 'appointment_time')[:5]
-    history = Appointment.objects.filter(patient=request.user).order_by('-created_at')[:6]
+    upcoming = Appointment.objects.filter(
+        patient=request.user
+    ).order_by('appointment_date', 'appointment_time')[:5]
+    history = Appointment.objects.filter(
+        patient=request.user
+    ).order_by('-created_at')[:6]
 
     context = {
         'total_doctors': total_doctors,
@@ -161,7 +165,8 @@ def patient_dashboard(request):
         'history': history,
         'doctors': doctors,
     }
-    return render(request, 'patient_dashboard.html', context)    
+    return render(request, 'patient_dashboard.html', context)
+
 
 @login_required
 def doctor_dashboard(request):
@@ -199,7 +204,9 @@ def admin_dashboard(request):
     total_patients = Profile.objects.filter(role='patient').count()
     total_doctors = Profile.objects.filter(role='doctor', is_approved=True).count()
     total_appointments = Appointment.objects.count()
-    daily_stats = Appointment.objects.values('appointment_date').annotate(total=Count('id')).order_by('-appointment_date')[:7]
+    daily_stats = Appointment.objects.values('appointment_date').annotate(
+        total=Count('id')
+    ).order_by('-appointment_date')[:7]
 
     return render(request, 'admin_dashboard.html', {
         'pending_doctors': pending_doctors,
@@ -212,74 +219,62 @@ def admin_dashboard(request):
 
 @login_required
 def book_appointment(request):
-    profile = get_object_or_404(Profile, user=request.user)
-    if profile.role != 'patient':
-        return redirect('home')
-
-    doctors = Profile.objects.filter(
-        role='doctor',
-        is_approved=True
-    ).select_related('user')
-
-    selected_doctor_id = request.GET.get('doctor') or request.POST.get('doctor')
-    selected_doctor = None
-
-    if selected_doctor_id:
-        try:
-            selected_doctor = Profile.objects.select_related('user').get(
-                user__id=selected_doctor_id,
-                role='doctor',
-                is_approved=True
-            )
-        except Profile.DoesNotExist:
-            selected_doctor = None
+    doctors = User.objects.filter(
+        profile__role='doctor',
+        profile__is_approved=True
+    ).select_related('profile')
 
     if request.method == 'POST':
         doctor_id = request.POST.get('doctor')
         appointment_date = request.POST.get('appointment_date')
         appointment_time = request.POST.get('appointment_time')
-        problem = request.POST.get('problem', '').strip()
+        reason = request.POST.get('reason')
 
-        if not doctor_id or not appointment_date or not appointment_time or not problem:
-            messages.error(request, "Please fill all fields.")
-            return redirect(f"{request.path}?doctor={doctor_id}" if doctor_id else 'book_appointment')
+        if not doctor_id or not appointment_date or not appointment_time or not reason:
+            messages.error(request, "All fields are required.")
+            return render(request, 'book_appointment.html', {'doctors': doctors})
 
-        doctor_profile = get_object_or_404(
-            Profile,
-            user__id=doctor_id,
-            role='doctor',
-            is_approved=True
-        )
+        try:
+            doctor = User.objects.get(
+                id=doctor_id,
+                profile__role='doctor',
+                profile__is_approved=True
+            )
 
-        Appointment.objects.create(
-            patient=request.user,
-            doctor=doctor_profile.user,
-            appointment_date=appointment_date,
-            appointment_time=appointment_time,
-            problem=problem,
-            status='pending',
-            reminder_sent=False
-        )
+            appointment = Appointment.objects.create(
+                patient=request.user,
+                doctor=doctor,
+                appointment_date=appointment_date,
+                appointment_time=appointment_time,
+                reason=reason,
+                status='pending',
+                reminder_sent=False
+            )
 
-        messages.success(request, "Appointment booked successfully.")
-        return redirect('booking_history')
+            try:
+                send_booking_confirmation_email(appointment)
+                messages.success(request, "Appointment booked successfully. Confirmation email sent.")
+            except Exception as e:
+                print("Booking confirmation email failed:", e)
+                messages.success(request, "Appointment booked successfully, but email was not sent.")
 
-    return render(request, 'booking.html', {
-        'doctors': doctors,
-        'selected_doctor_id': str(selected_doctor_id) if selected_doctor_id else '',
-        'selected_doctor': selected_doctor,
-    })
+            return redirect('booking_history')
+
+        except User.DoesNotExist:
+            messages.error(request, "Doctor not found.")
+        except Exception as e:
+            messages.error(request, f"Booking failed: {str(e)}")
+
+    return render(request, 'book_appointment.html', {'doctors': doctors})
+
 
 @login_required
 def booking_history(request):
-    profile = get_object_or_404(Profile, user=request.user)
-    if profile.role != 'patient':
-        return redirect('home')
-
-    appointments = Appointment.objects.filter(patient=request.user).order_by('-created_at')
+    appointments = Appointment.objects.filter(
+        patient=request.user
+    ).order_by('-appointment_date', '-appointment_time')
     return render(request, 'booking_history.html', {'appointments': appointments})
 
-from .utils import send_confirmation_email
 
 @login_required
 def confirm_booking(request, appointment_id):
@@ -287,7 +282,11 @@ def confirm_booking(request, appointment_id):
     if profile.role != 'doctor':
         return redirect('home')
 
-    appointment = get_object_or_404(Appointment, id=appointment_id, doctor=request.user)
+    appointment = get_object_or_404(
+        Appointment,
+        id=appointment_id,
+        doctor=request.user
+    )
     appointment.status = 'confirmed'
     appointment.reminder_sent = False
     appointment.save()
@@ -295,7 +294,8 @@ def confirm_booking(request, appointment_id):
     email_ok = False
 
     try:
-        email_ok = send_confirmation_email(appointment)
+        send_booking_confirmation_email(appointment)
+        email_ok = True
     except Exception as e:
         print("Confirmation email failed:", e)
 
@@ -305,6 +305,7 @@ def confirm_booking(request, appointment_id):
         messages.success(request, "Appointment confirmed, but email was not sent.")
 
     return redirect('doctor_dashboard')
+
 
 @login_required
 def reject_booking(request, appointment_id):
@@ -366,12 +367,17 @@ def start_chat(request, doctor_id):
 
     return redirect('chat_room', room_id=room.id)
 
+
 @login_required
 def my_chats(request):
     if request.user.profile.role == 'patient':
-        rooms = ChatRoom.objects.filter(patient=request.user).select_related('doctor', 'patient', 'doctor__profile')
+        rooms = ChatRoom.objects.filter(patient=request.user).select_related(
+            'doctor', 'patient', 'doctor__profile'
+        )
     elif request.user.profile.role == 'doctor':
-        rooms = ChatRoom.objects.filter(doctor=request.user).select_related('doctor', 'patient', 'patient__profile')
+        rooms = ChatRoom.objects.filter(doctor=request.user).select_related(
+            'doctor', 'patient', 'patient__profile'
+        )
     else:
         rooms = ChatRoom.objects.none()
 
@@ -525,5 +531,3 @@ def feedback_list(request):
 
     feedbacks = Feedback.objects.select_related('patient').order_by('-created_at')
     return render(request, 'feedback_list.html', {'feedbacks': feedbacks})
-
-    

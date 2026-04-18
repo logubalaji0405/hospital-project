@@ -12,11 +12,11 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         now = timezone.localtime()
-        target_start = now + timedelta(minutes=29)
-        target_end = now + timedelta(minutes=31)
+        target_start = now + timedelta(minutes=4)
+        target_end = now + timedelta(minutes=6)
 
-        print("Current time:", now)
-        print("Checking between:", target_start, "and", target_end)
+        self.stdout.write(f"Current time: {now}")
+        self.stdout.write(f"Checking appointments between: {target_start} and {target_end}")
 
         appointments = Appointment.objects.filter(
             status='confirmed',
@@ -24,6 +24,7 @@ class Command(BaseCommand):
         ).select_related('patient', 'doctor')
 
         found = 0
+        sent = 0
 
         for appointment in appointments:
             appointment_datetime = datetime.combine(
@@ -31,33 +32,28 @@ class Command(BaseCommand):
                 appointment.appointment_time
             )
 
-            if timezone.is_naive(appointment_datetime):
-                appointment_datetime = timezone.make_aware(
-                    appointment_datetime,
-                    timezone.get_current_timezone()
-                )
-
-            print(
-                f"Checking appointment #{appointment.id} | "
-                f"{appointment_datetime} | "
-                f"status={appointment.status} | "
-                f"reminder_sent={appointment.reminder_sent}"
-            )
+            current_tz = timezone.get_current_timezone()
+            appointment_datetime = timezone.make_aware(appointment_datetime, current_tz)
 
             if target_start <= appointment_datetime <= target_end:
                 found += 1
-                print(f"Matched appointment #{appointment.id}")
-
                 try:
-                    ok = send_reminder_email(appointment)
-                    if ok:
-                        appointment.reminder_sent = True
-                        appointment.save()
-                        print(f"Reminder sent for appointment #{appointment.id}")
-                except Exception as e:
-                    print(f"Reminder failed for appointment #{appointment.id}: {e}")
+                    send_reminder_email(appointment)
+                    appointment.reminder_sent = True
+                    appointment.save()
 
-        if found == 0:
-            print("No appointments found in 5-minute reminder window.")
-        else:
-            print("Reminder check completed.")
+                    sent += 1
+                    self.stdout.write(
+                        self.style.SUCCESS(
+                            f"Reminder sent for appointment #{appointment.id} to {appointment.patient.email}"
+                        )
+                    )
+                except Exception as e:
+                    self.stdout.write(
+                        self.style.ERROR(
+                            f"Failed to send reminder for appointment #{appointment.id}: {str(e)}"
+                        )
+                    )
+
+        self.stdout.write(self.style.SUCCESS(f"Matching appointments found: {found}"))
+        self.stdout.write(self.style.SUCCESS(f"Reminders sent: {sent}"))
