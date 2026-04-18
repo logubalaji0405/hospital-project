@@ -1,0 +1,704 @@
+{% extends 'base.html' %}
+{% block title %}Patient Dashboard | Healix HMS{% endblock %}
+
+{% block content %}
+<div class="patient-dashboard py-5">
+
+    <!-- HERO -->
+    <section class="dashboard-hero mb-5">
+        <div class="container">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-8">
+                    <span class="hero-badge">Patient Panel</span>
+                    <h1 class="hero-title mt-3">
+                        Welcome, {{ user.first_name|default:user.username }}
+                    </h1>
+                    <p class="hero-desc">
+                        Manage your appointments, explore doctor profiles, view booking history,
+                        and stay updated with hospital services in one place.
+                    </p>
+
+                    <div class="hero-actions mt-4">
+                        <a href="{% url 'book_appointment' %}" class="btn btn-light btn-lg px-4">
+                            Book Appointment
+                        </a>
+                        <a href="{% url 'booking_history' %}" class="btn btn-outline-light btn-lg px-4">
+                            Booking History
+                        </a>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="hero-image-box">
+                        <img
+                            src="https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=1000&q=80"
+                            alt="Hospital"
+                            class="img-fluid rounded-4 hero-main-img"
+                        >
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- STATS -->
+    <section class="container mb-5">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="stat-icon">👨‍⚕️</div>
+                    <h3>{{ total_doctors }}</h3>
+                    <p>Approved Doctors</p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="stat-icon">📅</div>
+                    <h3>{{ my_bookings }}</h3>
+                    <p>My Total Bookings</p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="stat-icon">🏥</div>
+                    <h3>24/7</h3>
+                    <p>Hospital Support</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- UPCOMING APPOINTMENTS -->
+    <section class="container mb-5">
+        <div class="section-head mb-4">
+            <div>
+                <span class="section-badge">Appointments</span>
+                <h2 class="section-title">Upcoming / Recent Appointments</h2>
+            </div>
+        </div>
+
+        <div class="table-box">
+            <div class="table-responsive">
+                <table class="table appointment-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Doctor</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in upcoming %}
+                        <tr>
+                            <td>
+                                <div class="doctor-mini d-flex align-items-center gap-2">
+                                    <div class="doctor-avatar-mini">
+                                        {{ item.doctor.username|slice:":1"|upper }}
+                                    </div>
+                                    <span>{{ item.doctor.first_name|default:item.doctor.username }}</span>
+                                </div>
+                            </td>
+                            <td>{{ item.appointment_date }}</td>
+                            <td>{{ item.appointment_time }}</td>
+                            <td>
+                                {% if item.status == 'pending' %}
+                                    <span class="status-badge status-pending">Pending</span>
+                                {% elif item.status == 'confirmed' %}
+                                    <span class="status-badge status-confirmed">Confirmed</span>
+                                {% elif item.status == 'rejected' %}
+                                    <span class="status-badge status-rejected">Rejected</span>
+                                {% else %}
+                                    <span class="status-badge status-default">{{ item.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'doctor_list' %}" class="btn btn-sm btn-primary rounded-pill px-3">
+                                    Chat
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4">No appointments yet</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- DOCTOR PROFILES -->
+    <!-- DOCTOR PROFILES -->
+<section class="container mb-5">
+    <div class="section-head mb-4">
+        <div>
+            <span class="section-badge">Doctors</span>
+            <h2 class="section-title">Available Doctor Profiles</h2>
+            <p class="section-text">
+                Browse specialist doctors and start your healthcare journey with confidence.
+            </p>
+        </div>
+    </div>
+
+    <div class="row g-4" id="doctorCardsWrapper">
+        {% for doctor in doctors %}
+        <div class="col-lg-4 col-md-6 doctor-card-item {% if forloop.counter > 4 %}extra-doctor d-none{% endif %}">
+            <div class="doctor-card">
+                <div class="doctor-image-wrap">
+                    {% if doctor.profile_image %}
+                        <img src="{{ doctor.profile_image.url }}" alt="Doctor" class="doctor-image">
+                    {% else %}
+                        <img
+                            src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=800&q=80"
+                            alt="Doctor"
+                            class="doctor-image"
+                        >
+                    {% endif %}
+                </div>
+
+                <div class="doctor-card-body">
+                    <h5 class="doctor-name">
+                        Dr. {{ doctor.user.first_name|default:doctor.user.username }}
+                    </h5>
+                    <p class="doctor-dept">
+                        {{ doctor.department|default:"General Specialist" }}
+                    </p>
+
+                    <div class="doctor-meta">
+                        <span>✅ Approved</span>
+                        <span>📞 {{ doctor.phone|default:"Not added" }}</span>
+                    </div>
+
+                    <p class="doctor-desc">
+                        {% if doctor.description %}
+                            {{ doctor.description }}
+                        {% else %}
+                            Experienced and dedicated doctor focused on quality care, patient safety, and smooth consultation workflow.
+                        {% endif %}
+                    </p>
+
+                    <div class="d-flex gap-2 mt-3">
+                        <a href="{% url 'book_appointment' %}?doctor={{ doctor.user.id }}"
+                           class="btn btn-primary w-100 rounded-pill">
+                            Book Now
+                        </a>
+                        <a href="{% url 'start_chat' doctor.user.id %}"
+                           class="btn btn-outline-primary w-100 rounded-pill">
+                            Chat
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="empty-box">
+                <h5>No approved doctors found</h5>
+                <p>Please check again later.</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if doctors|length > 4 %}
+    <div class="text-center mt-4">
+        <button id="seeMoreDoctorsBtn" class="btn btn-primary px-4 rounded-pill" onclick="showAllDoctors()">
+            See More Doctors
+        </button>
+    </div>
+    {% endif %}
+</section>
+            
+
+    <!-- FACILITIES -->
+    <section class="container mb-5">
+        <div class="section-head text-center mb-5">
+            <span class="section-badge">Facilities</span>
+            <h2 class="section-title">Hospital Facilities & Services</h2>
+            <p class="section-text">Modern infrastructure and patient-focused support for better care.</p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="facility-card">
+                    <img
+                        src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=1200&q=80"
+                        alt="Emergency"
+                        class="facility-img"
+                    >
+                    <div class="facility-content">
+                        <h5>24/7 Emergency Care</h5>
+                        <p>Quick emergency response with trained staff and immediate medical attention.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="facility-card">
+                    <img
+                        src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80"
+                        alt="Laboratory"
+                        class="facility-img"
+                    >
+                    <div class="facility-content">
+                        <h5>Advanced Laboratory</h5>
+                        <p>Accurate testing services with modern equipment for faster diagnosis.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="facility-card">
+                    <img
+                        src="https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=1200&q=80"
+                        alt="Pharmacy"
+                        class="facility-img"
+                    >
+                    <div class="facility-content">
+                        <h5>In-House Pharmacy</h5>
+                        <p>Medicine support and prescription services available within the hospital campus.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- EXTRA CONTENT -->
+    <section class="container mb-5">
+        <div class="info-strip">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-8">
+                    <h3>Why patients choose Healix HMS</h3>
+                    <p>
+                        Healix HMS gives patients a clean booking experience, easier doctor discovery,
+                        transparent booking history, and timely reminder emails before appointments.
+                        Our goal is to improve both convenience and care quality.
+                    </p>
+                </div>
+                <div class="col-lg-4 text-lg-end">
+                    <a href="{% url 'book_appointment' %}" class="btn btn-primary btn-lg rounded-pill px-4">
+                        Book New Appointment
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- BOOKING HISTORY -->
+    <section class="container">
+        <div class="section-head mb-4">
+            <div>
+                <span class="section-badge">History</span>
+                <h2 class="section-title">Recent Booking History</h2>
+            </div>
+        </div>
+
+        <div class="table-box">
+            <div class="table-responsive">
+                <table class="table appointment-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Doctor</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Problem</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in history %}
+                        <tr>
+                            <td>{{ item.doctor.first_name|default:item.doctor.username }}</td>
+                            <td>{{ item.appointment_date }}</td>
+                            <td>{{ item.appointment_time }}</td>
+                            <td>{{ item.problem }}</td>
+                            <td>
+                                {% if item.status == 'pending' %}
+                                    <span class="status-badge status-pending">Pending</span>
+                                {% elif item.status == 'confirmed' %}
+                                    <span class="status-badge status-confirmed">Confirmed</span>
+                                {% elif item.status == 'rejected' %}
+                                    <span class="status-badge status-rejected">Rejected</span>
+                                {% else %}
+                                    <span class="status-badge status-default">{{ item.status }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4">No booking history available</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<style>
+    :root {
+        --primary: #0d6efd;
+        --primary-dark: #0b57d0;
+        --dark: #0f172a;
+        --text: #64748b;
+        --light: #f8fbff;
+        --border: #e8eef8;
+        --shadow: 0 14px 35px rgba(15, 23, 42, 0.08);
+    }
+
+    .patient-dashboard {
+        background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+    }
+
+    .dashboard-hero {
+        background: linear-gradient(135deg, #0d6efd, #0b57d0);
+        border-radius: 30px;
+        margin: 0 12px;
+        color: #fff;
+        box-shadow: 0 20px 50px rgba(13, 110, 253, 0.22);
+        overflow: hidden;
+    }
+
+    .dashboard-hero .container {
+        padding-top: 50px;
+        padding-bottom: 50px;
+    }
+
+    .hero-badge,
+    .section-badge {
+        display: inline-block;
+        padding: 8px 18px;
+        border-radius: 30px;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .hero-badge {
+        background: rgba(255, 255, 255, 0.16);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    .section-badge {
+        background: #eaf4ff;
+        color: var(--primary);
+    }
+
+    .hero-title {
+        font-size: 3rem;
+        font-weight: 800;
+        line-height: 1.15;
+    }
+
+    .hero-desc {
+        max-width: 700px;
+        color: rgba(255, 255, 255, 0.9);
+        line-height: 1.8;
+        font-size: 1.02rem;
+    }
+
+    .hero-actions {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+    }
+
+    .hero-image-box {
+        position: relative;
+    }
+
+    .hero-main-img {
+        width: 100%;
+        height: 360px;
+        object-fit: cover;
+        border: 4px solid rgba(255, 255, 255, 0.15);
+        box-shadow: var(--shadow);
+    }
+
+    .stat-card {
+        background: #fff;
+        border-radius: 22px;
+        padding: 28px 24px;
+        text-align: center;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+        height: 100%;
+    }
+
+    .stat-icon {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 16px;
+        border-radius: 18px;
+        background: #eef5ff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+    }
+
+    .stat-card h3 {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--dark);
+        margin-bottom: 8px;
+    }
+
+    .stat-card p {
+        color: var(--text);
+        margin: 0;
+        font-weight: 500;
+    }
+
+    .section-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+
+    .section-title {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--dark);
+        margin-top: 12px;
+        margin-bottom: 0;
+    }
+
+    .section-text {
+        color: var(--text);
+        margin-top: 10px;
+    }
+
+    .table-box {
+        background: #fff;
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+        overflow: hidden;
+    }
+
+    .appointment-table thead th {
+        background: #eef4ff;
+        color: var(--dark);
+        border: none;
+        font-weight: 700;
+        padding: 16px 14px;
+    }
+
+    .appointment-table tbody td {
+        padding: 16px 14px;
+        border-color: #eef2f7;
+        color: #334155;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 8px 14px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .status-pending {
+        background: #fff4db;
+        color: #b7791f;
+    }
+
+    .status-confirmed {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .status-rejected {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+
+    .status-default {
+        background: #e2e8f0;
+        color: #334155;
+    }
+
+    .doctor-avatar-mini {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: #dbeafe;
+        color: #1d4ed8;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+    }
+
+    .doctor-card {
+        background: #fff;
+        border-radius: 26px;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+        overflow: hidden;
+        height: 100%;
+    }
+
+    .doctor-image-wrap {
+        height: 220px;
+        overflow: hidden;
+    }
+
+    .doctor-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .doctor-card-body {
+        padding: 24px;
+    }
+
+    .doctor-name {
+        font-weight: 800;
+        color: var(--dark);
+        margin-bottom: 6px;
+    }
+
+    .doctor-dept {
+        color: var(--primary);
+        font-weight: 600;
+        margin-bottom: 12px;
+    }
+
+    .doctor-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        color: var(--text);
+        font-size: 14px;
+    }
+
+    .doctor-desc {
+        margin-top: 14px;
+        color: var(--text);
+        line-height: 1.7;
+        min-height: 95px;
+    }
+
+    .facility-card {
+        background: #fff;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+        height: 100%;
+    }
+
+    .facility-img {
+        width: 100%;
+        height: 220px;
+        object-fit: cover;
+    }
+
+    .facility-content {
+        padding: 22px;
+    }
+
+    .facility-content h5 {
+        font-weight: 800;
+        color: var(--dark);
+        margin-bottom: 10px;
+    }
+
+    .facility-content p {
+        color: var(--text);
+        margin: 0;
+        line-height: 1.7;
+    }
+
+    .info-strip {
+        background: linear-gradient(135deg, #eff6ff, #f8fbff);
+        border: 1px solid #dbeafe;
+        border-radius: 28px;
+        padding: 34px 28px;
+    }
+
+    .info-strip h3 {
+        font-weight: 800;
+        color: var(--dark);
+    }
+
+    .info-strip p {
+        color: var(--text);
+        margin: 10px 0 0;
+        line-height: 1.8;
+    }
+
+    .empty-box {
+        background: #fff;
+        border-radius: 24px;
+        padding: 40px 20px;
+        text-align: center;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+    }
+
+    .empty-box h5 {
+        font-weight: 800;
+        color: var(--dark);
+    }
+
+    .empty-box p {
+        color: var(--text);
+        margin: 8px 0 0;
+    }
+
+    @media (max-width: 991px) {
+        .hero-title {
+            font-size: 2.3rem;
+        }
+
+        .hero-main-img {
+            height: 280px;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .hero-title {
+            font-size: 1.9rem;
+        }
+
+        .hero-actions {
+            flex-direction: column;
+        }
+
+        .hero-actions .btn {
+            width: 100%;
+        }
+
+        .section-title {
+            font-size: 1.6rem;
+        }
+    }
+</style>
+
+<script>
+function showAllDoctors() {
+    const hiddenDoctors = document.querySelectorAll('.extra-doctor');
+    const btn = document.getElementById('seeMoreDoctorsBtn');
+
+    hiddenDoctors.forEach(card => {
+        card.classList.remove('d-none');
+    });
+
+    if (btn) {
+        btn.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

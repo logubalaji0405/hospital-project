@@ -1,0 +1,830 @@
+{% extends 'base.html' %}
+{% block title %}Home | Healix HMS{% endblock %}
+
+{% block content %}
+<section class="hero-section position-relative overflow-hidden">
+    <div class="hero-shape hero-shape-1"></div>
+    <div class="hero-shape hero-shape-2"></div>
+
+    <div class="container py-5">
+        <div class="row align-items-center g-5 min-vh-100">
+            <div class="col-lg-6">
+                <div class="hero-text pe-lg-4">
+                    <span class="hero-badge">Advanced Hospital Management Platform</span>
+
+                    <h1 class="hero-title mt-4">
+                        Smart Healthcare Management For
+                        <span>Patients, Doctors, and Admin</span>
+                    </h1>
+
+                    <p class="hero-desc">
+                        Healix HMS is a complete hospital management system for appointment booking,
+                        doctor approval, patient records, secure communication, and smooth hospital workflow.
+                        Manage healthcare services with a premium and modern digital experience.
+                    </p>
+
+                    <div class="hero-buttons">
+                        {% if user.is_authenticated %}
+                            {% if user.profile.role == 'patient' %}
+                                <a href="{% url 'patient_dashboard' %}" class="btn btn-primary btn-lg px-4">
+                                    Open Patient Dashboard
+                                </a>
+                                <a href="{% url 'book_appointment' %}" class="btn btn-light btn-lg px-4">
+                                    Book Appointment
+                                </a>
+                            {% elif user.profile.role == 'doctor' %}
+                                <a href="{% url 'doctor_dashboard' %}" class="btn btn-primary btn-lg px-4">
+                                    Open Doctor Dashboard
+                                </a>
+                            {% elif user.profile.role == 'admin' %}
+                                <a href="{% url 'admin_dashboard' %}" class="btn btn-primary btn-lg px-4">
+                                    Open Admin Dashboard
+                                </a>
+                            {% endif %}
+                        {% else %}
+                            <a href="{% url 'login' %}" class="btn btn-primary btn-lg px-4">
+                                Login Now
+                            </a>
+                            <a href="{% url 'register' %}" class="btn btn-outline-light btn-lg px-4">
+                                Create Account
+                            </a>
+                        {% endif %}
+                    </div>
+
+                    <div class="hero-mini-stats mt-4">
+                        <div class="mini-stat-card">
+                            <h4>24/7</h4>
+                            <p>Emergency Support</p>
+                        </div>
+                        <div class="mini-stat-card">
+                            <h4>100+</h4>
+                            <p>Doctors</p>
+                        </div>
+                        <div class="mini-stat-card">
+                            <h4>5000+</h4>
+                            <p>Happy Patients</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="hero-card">
+                    <div class="hero-card-head">
+                        <div>
+                            <p class="small-label mb-1">Hospital Overview</p>
+                            <h3 class="mb-0">Core Services</h3>
+                        </div>
+                        <div class="pulse-icon">🏥</div>
+                    </div>
+
+                    <div class="service-list mt-4">
+                        <div class="service-item">
+                            <div class="service-icon">📅</div>
+                            <div>
+                                <h6>Appointment Booking</h6>
+                                <p>Book appointments quickly with approved doctors and get instant confirmation updates.</p>
+                            </div>
+                        </div>
+
+                        <div class="service-item">
+                            <div class="service-icon">👨‍⚕️</div>
+                            <div>
+                                <h6>Doctor Management</h6>
+                                <p>Doctors can manage appointments, track patients, and handle confirmations easily.</p>
+                            </div>
+                        </div>
+
+                        <div class="service-item">
+                            <div class="service-icon">📁</div>
+                            <div>
+                                <h6>Patient Records</h6>
+                                <p>Store and manage patient profiles, medical concerns, and appointment history securely.</p>
+                            </div>
+                        </div>
+
+                        <div class="service-item">
+                            <div class="service-icon">💬</div>
+                            <div>
+                                <h6>Secure Communication</h6>
+                                <p>Provide better doctor-patient communication with protected chat and notifications.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="floating-badge badge-one">98% Patient Satisfaction</div>
+                <div class="floating-badge badge-two">30 Min Reminder</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="stats-section py-5">
+    <div class="container">
+        <div class="stats-wrapper">
+            <div class="row g-4 text-center">
+                <div class="col-md-3 col-6">
+                    <div class="stat-box">
+                        <div class="stat-icon">👥</div>
+                        <h3>5000+</h3>
+                        <p>Registered Patients</p>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stat-box">
+                        <div class="stat-icon">🩺</div>
+                        <h3>120+</h3>
+                        <p>Expert Doctors</p>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stat-box">
+                        <div class="stat-icon">🏢</div>
+                        <h3>45+</h3>
+                        <p>Departments</p>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stat-box">
+                        <div class="stat-icon">⚡</div>
+                        <h3>24/7</h3>
+                        <p>Emergency Care</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="features-section py-5">
+    <div class="container">
+        <div class="section-head text-center mb-5">
+            <span class="section-badge">Our Modules</span>
+            <h2>Powerful Features For Complete Hospital Workflow</h2>
+            <p>Everything needed in one healthcare platform</p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon-box">🧑</div>
+                    <h4>Patient Module</h4>
+                    <p>Register, book appointments, manage profile, track booking history, and receive reminder emails automatically.</p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="feature-card featured-main">
+                    <div class="feature-icon-box">👨‍⚕️</div>
+                    <h4>Doctor Module</h4>
+                    <p>Doctors can confirm appointments, view patient requests, manage schedule, and improve care delivery.</p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon-box">🛡️</div>
+                    <h4>Admin Module</h4>
+                    <p>Approve doctors, monitor appointments, analyze hospital activity, and manage the full system securely.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="why-section py-5">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6">
+                <div class="why-image-box">
+                    <div class="why-overlay-card">
+                        <h4>Why Choose Healix HMS?</h4>
+                        <ul>
+                            <li>Fast patient booking flow</li>
+                            <li>Doctor approval system</li>
+                            <li>Appointment reminder emails</li>
+                            <li>Modern admin dashboard</li>
+                            <li>Premium responsive design</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <span class="section-badge">Why Us</span>
+                <h2 class="section-title mt-3">A modern digital solution for better hospital management</h2>
+                <p class="section-text">
+                    Healix HMS reduces manual work and improves communication between patients, doctors,
+                    and administrators. It creates a clean and efficient healthcare management experience.
+                </p>
+
+                <div class="why-points mt-4">
+                    <div class="why-point">
+                        <span>✔</span>
+                        <div>
+                            <h6>Easy Appointment Flow</h6>
+                            <p>Simple and fast booking process with smooth patient experience.</p>
+                        </div>
+                    </div>
+
+                    <div class="why-point">
+                        <span>✔</span>
+                        <div>
+                            <h6>Secure Record Handling</h6>
+                            <p>Maintain patient and doctor data in a structured and secure way.</p>
+                        </div>
+                    </div>
+
+                    <div class="why-point">
+                        <span>✔</span>
+                        <div>
+                            <h6>Reminder Notification Support</h6>
+                            <p>Automatic email reminders before appointment time for better attendance.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="departments-section py-5">
+    <div class="container">
+        <div class="section-head text-center mb-5">
+            <span class="section-badge">Departments</span>
+            <h2>Specialized Medical Departments</h2>
+            <p>Covering the most important healthcare needs</p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-3 col-6">
+                <div class="department-card">
+                    <div class="department-icon">❤️</div>
+                    <h5>Cardiology</h5>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="department-card">
+                    <div class="department-icon">🧠</div>
+                    <h5>Neurology</h5>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="department-card">
+                    <div class="department-icon">🦴</div>
+                    <h5>Orthopedics</h5>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="department-card">
+                    <div class="department-icon">👶</div>
+                    <h5>Pediatrics</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="process-section py-5">
+    <div class="container">
+        <div class="section-head text-center mb-5">
+            <span class="section-badge">How It Works</span>
+            <h2>Simple Healthcare Journey</h2>
+            <p>Easy steps for patients and doctors</p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-3">
+                <div class="process-card">
+                    <div class="process-number">01</div>
+                    <h5>Register</h5>
+                    <p>Create a patient, doctor, or admin account quickly.</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="process-card">
+                    <div class="process-number">02</div>
+                    <h5>Book</h5>
+                    <p>Patients choose doctor, date, time, and reason.</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="process-card">
+                    <div class="process-number">03</div>
+                    <h5>Confirm</h5>
+                    <p>Doctors review requests and confirm appointments.</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="process-card">
+                    <div class="process-number">04</div>
+                    <h5>Remind</h5>
+                    <p>System sends reminder email before appointment.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="testimonial-section py-5">
+    <div class="container">
+        <div class="section-head text-center mb-5">
+            <span class="section-badge">Feedback</span>
+            <h2>What Users Say</h2>
+            <p>Trusted by patients and doctors</p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="testimonial-card">
+                    <p>“The appointment booking flow is smooth and very easy to use. Reminder emails are really helpful.”</p>
+                    <h6>- Patient User</h6>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="testimonial-card">
+                    <p>“Doctor dashboard is clean, simple, and helps manage daily patient requests quickly.”</p>
+                    <h6>- Doctor User</h6>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="testimonial-card">
+                    <p>“Admin features make doctor approval and hospital monitoring much easier.”</p>
+                    <h6>- Admin User</h6>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="cta-section py-5">
+    <div class="container">
+        <div class="cta-box text-center">
+            <span class="section-badge light-badge">Get Started</span>
+            <h2 class="mt-3">Build Better Patient Care With Healix HMS</h2>
+            <p class="mt-3">
+                Simplify hospital operations, improve communication, and manage appointments with confidence.
+            </p>
+
+            <div class="hero-buttons justify-content-center mt-4">
+                {% if user.is_authenticated %}
+                    {% if user.profile.role == 'patient' %}
+                        <a href="{% url 'patient_dashboard' %}" class="btn btn-light btn-lg px-4">
+                            Go To Dashboard
+                        </a>
+                    {% elif user.profile.role == 'doctor' %}
+                        <a href="{% url 'doctor_dashboard' %}" class="btn btn-light btn-lg px-4">
+                            Go To Dashboard
+                        </a>
+                    {% elif user.profile.role == 'admin' %}
+                        <a href="{% url 'admin_dashboard' %}" class="btn btn-light btn-lg px-4">
+                            Go To Dashboard
+                        </a>
+                    {% endif %}
+                {% else %}
+                    <a href="{% url 'register' %}" class="btn btn-light btn-lg px-4">
+                        Create Account
+                    </a>
+                    <a href="{% url 'login' %}" class="btn btn-outline-light btn-lg px-4">
+                        Login
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+:root{
+    --primary:#0d6efd;
+    --primary-dark:#0b57d0;
+    --dark:#0f172a;
+    --text:#5b6475;
+    --white:#ffffff;
+    --light:#f7fbff;
+    --shadow:0 18px 45px rgba(15, 23, 42, 0.12);
+}
+
+.hero-section{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    background:linear-gradient(120deg, rgba(7,35,88,0.92), rgba(13,110,253,0.82)),
+    url('https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=1600&q=80');
+    background-size:cover;
+    background-position:center;
+    color:#fff;
+}
+
+.hero-shape{
+    position:absolute;
+    border-radius:50%;
+    background:rgba(255,255,255,0.08);
+    filter:blur(8px);
+}
+.hero-shape-1{
+    width:220px;
+    height:220px;
+    top:80px;
+    right:80px;
+}
+.hero-shape-2{
+    width:150px;
+    height:150px;
+    bottom:70px;
+    left:70px;
+}
+
+.hero-badge,
+.section-badge{
+    display:inline-block;
+    background:rgba(255,255,255,0.14);
+    border:1px solid rgba(255,255,255,0.18);
+    border-radius:30px;
+    padding:9px 18px;
+    font-weight:700;
+    backdrop-filter:blur(10px);
+}
+.section-badge{
+    background:#eaf4ff;
+    color:var(--primary);
+    border:none;
+}
+.light-badge{
+    background:rgba(255,255,255,0.16);
+    color:#fff;
+    border:1px solid rgba(255,255,255,0.15);
+}
+
+.hero-title{
+    font-size:3.2rem;
+    line-height:1.18;
+    font-weight:800;
+}
+.hero-title span{
+    color:#bfe0ff;
+}
+.hero-desc{
+    font-size:1.05rem;
+    line-height:1.9;
+    color:rgba(255,255,255,0.90);
+}
+.hero-buttons{
+    display:flex;
+    flex-wrap:wrap;
+    gap:14px;
+    margin-top:30px;
+}
+
+.hero-mini-stats{
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+}
+.mini-stat-card{
+    background:rgba(255,255,255,0.14);
+    border:1px solid rgba(255,255,255,0.18);
+    border-radius:18px;
+    padding:16px 20px;
+    min-width:130px;
+    text-align:center;
+    backdrop-filter:blur(10px);
+}
+.mini-stat-card h4{
+    margin:0;
+    font-weight:800;
+}
+.mini-stat-card p{
+    margin:6px 0 0;
+    font-size:.92rem;
+    color:rgba(255,255,255,0.85);
+}
+
+.hero-card{
+    background:rgba(255,255,255,0.98);
+    border-radius:28px;
+    padding:30px;
+    color:var(--dark);
+    box-shadow:var(--shadow);
+    position:relative;
+    z-index:2;
+}
+.hero-card-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+.small-label{
+    color:#6b7280;
+    font-size:14px;
+    font-weight:600;
+}
+.pulse-icon{
+    width:58px;
+    height:58px;
+    border-radius:50%;
+    background:linear-gradient(135deg, var(--primary), #4aa3ff);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:22px;
+    box-shadow:0 10px 30px rgba(13,110,253,.25);
+}
+
+.service-list{
+    display:grid;
+    gap:16px;
+}
+.service-item{
+    display:flex;
+    gap:14px;
+    align-items:flex-start;
+    padding:16px;
+    border-radius:18px;
+    background:#f8fbff;
+    border:1px solid #edf4ff;
+}
+.service-icon{
+    width:50px;
+    height:50px;
+    border-radius:16px;
+    background:#e8f2ff;
+    color:var(--primary);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:22px;
+    flex-shrink:0;
+}
+.service-item h6{
+    margin-bottom:6px;
+    font-weight:700;
+}
+.service-item p{
+    margin:0;
+    color:#64748b;
+    line-height:1.6;
+    font-size:.94rem;
+}
+
+.floating-badge{
+    position:absolute;
+    background:#fff;
+    color:var(--dark);
+    border-radius:18px;
+    padding:14px 18px;
+    box-shadow:0 12px 30px rgba(15, 23, 42, .12);
+    font-weight:700;
+}
+.badge-one{
+    top:30px;
+    right:-10px;
+}
+.badge-two{
+    bottom:20px;
+    left:-10px;
+}
+
+.stats-section{
+    background:#fff;
+}
+.stats-wrapper{
+    background:linear-gradient(135deg, var(--primary), var(--primary-dark));
+    border-radius:28px;
+    padding:36px 20px;
+    box-shadow:0 20px 50px rgba(13,110,253,0.22);
+}
+.stat-box{
+    color:#fff;
+}
+.stat-icon{
+    width:62px;
+    height:62px;
+    margin:0 auto 16px;
+    border-radius:18px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(255,255,255,0.14);
+    font-size:1.5rem;
+}
+.stat-box h3{
+    font-size:2rem;
+    font-weight:800;
+}
+.stat-box p{
+    margin:0;
+    color:rgba(255,255,255,0.88);
+}
+
+.features-section,
+.departments-section,
+.testimonial-section{
+    background:var(--light);
+}
+.section-head h2{
+    font-size:2.3rem;
+    font-weight:800;
+    color:var(--dark);
+    margin-top:14px;
+}
+.section-head p,
+.section-text{
+    color:var(--text);
+}
+
+.feature-card,
+.department-card,
+.process-card,
+.testimonial-card{
+    background:#fff;
+    border-radius:24px;
+    padding:28px;
+    height:100%;
+    box-shadow:0 12px 30px rgba(15, 23, 42, 0.06);
+    border:1px solid #edf2f7;
+    transition:.3s ease;
+}
+.feature-card:hover,
+.department-card:hover,
+.process-card:hover,
+.testimonial-card:hover{
+    transform:translateY(-6px);
+}
+.featured-main{
+    background:linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color:#fff;
+}
+.featured-main p{
+    color:rgba(255,255,255,.88);
+}
+.feature-icon-box{
+    width:68px;
+    height:68px;
+    border-radius:18px;
+    background:#eaf4ff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:28px;
+    margin-bottom:18px;
+}
+.featured-main .feature-icon-box{
+    background:rgba(255,255,255,.16);
+}
+
+.why-image-box{
+    min-height:420px;
+    border-radius:28px;
+    background:linear-gradient(rgba(13,110,253,0.20), rgba(13,110,253,0.20)),
+    url('https://images.unsplash.com/photo-1584982751601-97dcc096659c?auto=format&fit=crop&w=1200&q=80');
+    background-size:cover;
+    background-position:center;
+    position:relative;
+    box-shadow:var(--shadow);
+}
+.why-overlay-card{
+    position:absolute;
+    bottom:25px;
+    left:25px;
+    right:25px;
+    background:rgba(255,255,255,.95);
+    border-radius:22px;
+    padding:22px;
+}
+.why-overlay-card h4{
+    font-weight:800;
+    margin-bottom:14px;
+}
+.why-overlay-card ul{
+    margin:0;
+    padding-left:18px;
+    color:#475569;
+}
+.why-point{
+    display:flex;
+    gap:14px;
+    margin-bottom:18px;
+}
+.why-point span{
+    width:34px;
+    height:34px;
+    border-radius:50%;
+    background:#e8f2ff;
+    color:var(--primary);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:800;
+    flex-shrink:0;
+}
+.why-point h6{
+    margin-bottom:5px;
+    font-weight:700;
+}
+.why-point p{
+    margin:0;
+    color:var(--text);
+}
+
+.department-card{
+    text-align:center;
+}
+.department-icon{
+    width:72px;
+    height:72px;
+    border-radius:20px;
+    background:#eaf4ff;
+    color:var(--primary);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:30px;
+    margin:0 auto 16px;
+}
+.department-card h5{
+    font-weight:700;
+    margin:0;
+}
+
+.process-section{
+    background:#fff;
+}
+.process-number{
+    width:56px;
+    height:56px;
+    border-radius:16px;
+    background:linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:800;
+    margin-bottom:18px;
+}
+.process-card h5{
+    font-weight:700;
+    margin-bottom:10px;
+}
+.process-card p,
+.testimonial-card p{
+    color:var(--text);
+    margin-bottom:0;
+    line-height:1.7;
+}
+.testimonial-card h6{
+    margin-top:18px;
+    font-weight:700;
+    color:var(--primary-dark);
+}
+
+.cta-section{
+    background:#fff;
+}
+.cta-box{
+    background:linear-gradient(135deg, #0f172a, #1e3a8a);
+    color:#fff;
+    border-radius:30px;
+    padding:50px 20px;
+    box-shadow:0 20px 50px rgba(15, 23, 42, 0.18);
+}
+.cta-box h2{
+    font-size:2.2rem;
+    font-weight:800;
+}
+.cta-box p{
+    max-width:760px;
+    margin-left:auto;
+    margin-right:auto;
+    color:rgba(255,255,255,0.85);
+    line-height:1.8;
+}
+
+@media (max-width:991px){
+    .hero-title{
+        font-size:2.4rem;
+    }
+    .floating-badge{
+        position:static;
+        margin-top:14px;
+        display:inline-block;
+    }
+}
+@media (max-width:576px){
+    .hero-title{
+        font-size:1.9rem;
+    }
+    .hero-buttons{
+        flex-direction:column;
+    }
+    .hero-buttons .btn{
+        width:100%;
+    }
+    .section-head h2,
+    .cta-box h2{
+        font-size:1.7rem;
+    }
+}
+</style>
+{% endblock %}

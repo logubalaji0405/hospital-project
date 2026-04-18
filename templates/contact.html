@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% block title %}Contact | Healix HMS{% endblock %}
+
+{% block content %}
+<section class="contact-section py-5">
+    <div class="container">
+        <div class="row g-5 align-items-start">
+            <div class="col-lg-5">
+                <div class="contact-info-box h-100">
+                    <span class="section-badge">Contact Us</span>
+                    <h2 class="section-title mt-3">Get in touch with our hospital team</h2>
+                    <p class="section-text">
+                        Reach us for appointments, support, emergency details, and patient feedback.
+                    </p>
+
+                    <div class="contact-item">
+                        <h6>📍 Address</h6>
+                        <p>Healix Multi Speciality Hospital, Main Road, Chennai, Tamil Nadu, India</p>
+                    </div>
+
+                    <div class="contact-item">
+                        <h6>📞 Phone</h6>
+                        <p>+91 98765 43210</p>
+                    </div>
+
+                    <div class="contact-item">
+                        <h6>✉️ Email</h6>
+                        <p>support@healixhms.com</p>
+                    </div>
+
+                    <div class="contact-item">
+                        <h6>🕒 Working Hours</h6>
+                        <p>Monday - Sunday : 24/7 Support</p>
+                    </div>
+
+                    <img src="https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1200&q=80"
+                         class="img-fluid rounded-4 mt-3"
+                         alt="Hospital Contact">
+                </div>
+            </div>
+
+            <div class="col-lg-7">
+                <div class="feedback-form-box">
+                    <span class="section-badge">Patient Feedback</span>
+                    <h2 class="section-title mt-3">Send your feedback</h2>
+                    <p class="section-text">Share your experience, suggestions, and service feedback.</p>
+
+                    <form method="POST" class="mt-4">
+                        {% csrf_token %}
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Name</label>
+                                <input type="text" name="name" class="form-control custom-input"
+                                       value="{% if user.is_authenticated %}{{ user.first_name|default:user.username }}{% endif %}"
+                                       required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Email</label>
+                                <input type="email" name="email" class="form-control custom-input"
+                                       value="{% if user.is_authenticated %}{{ user.email }}{% endif %}"
+                                       required>
+                            </div>
+
+                            <div class="col-md-8">
+                                <label class="form-label fw-semibold">Subject</label>
+                                <input type="text" name="subject" class="form-control custom-input" required>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Rating</label>
+                                <select name="rating" class="form-select custom-input" required>
+                                    <option value="5">5 - Excellent</option>
+                                    <option value="4">4 - Very Good</option>
+                                    <option value="3">3 - Good</option>
+                                    <option value="2">2 - Average</option>
+                                    <option value="1">1 - Poor</option>
+                                </select>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Message</label>
+                                <textarea name="message" rows="5" class="form-control custom-input" required></textarea>
+                            </div>
+
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary w-100 submit-btn">
+                                    Submit Feedback
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+.contact-section{
+    background:linear-gradient(180deg,#f8fbff 0%,#ffffff 100%);
+}
+.section-badge{
+    display:inline-block;
+    padding:8px 18px;
+    border-radius:30px;
+    background:#eaf4ff;
+    color:#0d6efd;
+    font-weight:700;
+    font-size:14px;
+}
+.section-title{
+    font-size:2.2rem;
+    font-weight:800;
+    color:#0f172a;
+}
+.section-text{
+    color:#64748b;
+    line-height:1.8;
+}
+.contact-info-box,.feedback-form-box{
+    background:#fff;
+    border-radius:28px;
+    padding:30px;
+    box-shadow:0 12px 30px rgba(15,23,42,0.08);
+    border:1px solid #edf2f7;
+}
+.contact-item{
+    margin-top:20px;
+}
+.contact-item h6{
+    font-weight:800;
+    color:#0f172a;
+}
+.contact-item p{
+    color:#64748b;
+    margin:0;
+}
+.custom-input{
+    min-height:52px;
+    border-radius:14px;
+    border:1px solid #dbe4f0;
+    box-shadow:none;
+}
+.custom-input:focus{
+    border-color:#0d6efd;
+    box-shadow:0 0 0 0.15rem rgba(13,110,253,0.12);
+}
+.submit-btn{
+    min-height:52px;
+    border-radius:14px;
+    font-weight:700;
+}
+@media (max-width:576px){
+    .section-title{
+        font-size:1.7rem;
+    }
+}
+</style>
+{% endblock %}

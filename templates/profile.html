@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="box text-center">
+                <div class="mb-3">
+                    {% if profile.profile_image %}
+                        <img src="{{ profile.profile_image.url }}" style="width:120px;height:120px;border-radius:50%;object-fit:cover;">
+                    {% else %}
+                        <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png" style="width:120px;height:120px;border-radius:50%;">
+                    {% endif %}
+                </div>
+
+                <h4>{{ request.user.username }}</h4>
+                <p class="text-muted">{{ request.user.email }}</p>
+
+                <hr>
+
+                <p><strong>Role:</strong> {{ role }}</p>
+
+                {% if profile.phone %}
+                    <p><strong>Phone:</strong> {{ profile.phone }}</p>
+                {% endif %}
+
+                {% if profile.age %}
+                    <p><strong>Age:</strong> {{ profile.age }}</p>
+                {% endif %}
+
+                {% if profile.address %}
+                    <p><strong>Address:</strong> {{ profile.address }}</p>
+                {% endif %}
+
+                {% if role == 'patient' %}
+                    <hr>
+                    <h5 class="text-primary">Patient Details</h5>
+                    <p>Total Appointments: {{ request.user.patient_appointments.count }}</p>
+                {% endif %}
+
+                {% if role == 'doctor' %}
+                    <hr>
+                    <h5 class="text-success">Doctor Details</h5>
+                    <p><strong>Department:</strong> {{ profile.department }}</p>
+                    <p>
+                        <strong>Status:</strong>
+                        {% if profile.is_approved %}
+                            <span class="text-success">Approved</span>
+                        {% else %}
+                            <span class="text-warning">Pending Approval</span>
+                        {% endif %}
+                    </p>
+                    <p>Total Patients: {{ request.user.doctor_appointments.count }}</p>
+                {% endif %}
+
+                {% if role == 'admin' %}
+                    <hr>
+                    <h5 class="text-danger">Admin Panel</h5>
+                    <p>Full system access</p>
+                {% endif %}
+
+                <a href="{% url 'edit_profile' %}" class="btn btn-primary mt-3">
+                    Edit Profile
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
