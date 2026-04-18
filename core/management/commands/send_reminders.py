@@ -12,8 +12,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         now = timezone.localtime()
-        target_start = now + timedelta(minutes=4)
-        target_end = now + timedelta(minutes=6)
+        target_start = now + timedelta(minutes=3)
+        target_end = now + timedelta(minutes=7)
 
         self.stdout.write(f"Current time: {now}")
         self.stdout.write(f"Checking appointments between: {target_start} and {target_end}")
