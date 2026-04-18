@@ -9,34 +9,28 @@ def send_booking_confirmation_email(appointment):
         print("No patient email found")
         return False
 
-    subject = "✅ Appointment Confirmed | Healix Hospital"
+    subject = "Your Appointment is Confirmed ✅"
 
     message = f"""
 Dear {appointment.patient.first_name or appointment.patient.username},
 
-🎉 Your appointment has been successfully confirmed!
+We are pleased to inform you that your appointment has been successfully confirmed.
 
-━━━━━━━━━━━━━━━━━━━━━━━
-📋 APPOINTMENT DETAILS
-━━━━━━━━━━━━━━━━━━━━━━━
-👨‍⚕️ Doctor   : Dr. {appointment.doctor.first_name or appointment.doctor.username}
-📅 Date     : {appointment.appointment_date}
-⏰ Time     : {appointment.appointment_time}
-📝 Reason   : {appointment.reason}
+Appointment Details
+-------------------
+Doctor : Dr. {appointment.doctor.first_name or appointment.doctor.username}
+Date   : {appointment.appointment_date}
+Time   : {appointment.appointment_time}
+Reason : {appointment.reason}
 
-━━━━━━━━━━━━━━━━━━━━━━━
+Please arrive at least 10 minutes before your scheduled appointment time.
 
-⏳ Please arrive at least 10 minutes before your scheduled time.
+If you need to reschedule or cancel your appointment, please contact us in advance.
 
-📌 Need help?
-• Reschedule or cancel your appointment anytime.
-• Contact us for any assistance.
+Thank you for choosing our hospital.
 
-💙 Thank you for trusting Healix Hospital.
-We are committed to your care and well-being.
-
-Warm regards,  
-Healix Hospital Team
+Best regards,
+Healix Hospital Management System
 """
 
     try:
@@ -54,41 +48,34 @@ Healix Hospital Team
         return False
 
 
-def send_booking_confirmation_email(appointment):
+
+def send_reminder_email(appointment):
     patient_email = appointment.patient.email
 
     if not patient_email:
-        print("No patient email found")
+        print("No patient email found for reminder")
         return False
 
-    subject = "✅ Appointment Confirmed | Healix Hospital"
+    subject = "Reminder: Your Appointment is Tomorrow 📅"
 
     message = f"""
-Dear {appointment.patient.first_name or appointment.patient.username},
+Hello {appointment.patient.first_name or appointment.patient.username},
 
-🎉 Your appointment has been successfully confirmed!
+This is a friendly reminder that your appointment is scheduled for tomorrow.
 
-━━━━━━━━━━━━━━━━━━━━━━━
-📋 APPOINTMENT DETAILS
-━━━━━━━━━━━━━━━━━━━━━━━
-👨‍⚕️ Doctor   : Dr. {appointment.doctor.first_name or appointment.doctor.username}
-📅 Date     : {appointment.appointment_date}
-⏰ Time     : {appointment.appointment_time}
-📝 Reason   : {appointment.reason}
+Appointment Details
+-------------------
+Doctor : Dr. {appointment.doctor.first_name or appointment.doctor.username}
+Date   : {appointment.appointment_date}
+Time   : {appointment.appointment_time}
+Reason : {appointment.reason}
 
-━━━━━━━━━━━━━━━━━━━━━━━
+Please make sure you are available at the scheduled time.
 
-⏳ Please arrive at least 10 minutes before your scheduled time.
+If you need to reschedule or cancel, kindly contact us in advance.
 
-📌 Need help?
-• Reschedule or cancel your appointment anytime.
-• Contact us for any assistance.
-
-💙 Thank you for trusting Healix Hospital.
-We are committed to your care and well-being.
-
-Warm regards,  
-Healix Hospital Team
+Thank you,
+Healix Hospital Management System
 """
 
     try:
@@ -99,8 +86,8 @@ Healix Hospital Team
             [patient_email],
             fail_silently=False,
         )
-        print(f"Confirmation email sent to {patient_email}")
+        print(f"24-hour reminder email sent to {patient_email}")
         return True
     except Exception as e:
-        print("Confirmation email error:", e)
+        print("Reminder email error:", e)
         return False
