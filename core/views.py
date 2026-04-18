@@ -535,6 +535,7 @@ def feedback_list(request):
     return render(request, 'feedback_list.html', {'feedbacks': feedbacks})
 
 
+
 def run_reminders(request):
     secret_key = request.GET.get("key")
 
@@ -546,7 +547,7 @@ def run_reminders(request):
     appointments = Appointment.objects.filter(
         status='confirmed',
         reminder_sent=False,
-        appointment_date=now.date()
+        appointment_date__gte=now.date()
     ).select_related('patient', 'doctor')
 
     found = 0
@@ -566,6 +567,8 @@ def run_reminders(request):
         minutes_left = (appointment_datetime - now).total_seconds() / 60
 
         print("Appointment ID:", appointment.id)
+        print("Appointment time:", appointment_datetime)
+        print("Current time:", now)
         print("Minutes left:", minutes_left)
         print("Status:", appointment.status)
         print("Reminder sent:", appointment.reminder_sent)
@@ -581,7 +584,7 @@ def run_reminders(request):
                 appointment.reminder_sent = True
                 appointment.save()
                 sent += 1
-                print(f"Reminder sent for appointment #{appointment.id}")
+                print(f"24-hour reminder sent for appointment #{appointment.id}")
             else:
                 print(f"Reminder failed for appointment #{appointment.id}")
 

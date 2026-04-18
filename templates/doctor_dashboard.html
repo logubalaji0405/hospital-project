@@ -50,7 +50,7 @@
                         <td>{{ item.patient.first_name|default:item.patient.username }}</td>
                         <td>{{ item.appointment_date }}</td>
                         <td>{{ item.appointment_time }}</td>
-                        <td>{{ item.problem }}</td>
+                        <td>{{ item.reason }}</td>
                         <td>
                             {% if item.status == 'pending' %}
                                 <span class="badge bg-warning text-dark">Pending</span>
