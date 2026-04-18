@@ -571,7 +571,8 @@ def run_reminders(request):
         print("Reminder sent:", appointment.reminder_sent)
         print("Patient email:", appointment.patient.email)
 
-        if 0 < minutes_left <= 15:
+        # 24 hours before reminder
+        if 1435 <= minutes_left <= 1445:
             found += 1
 
             ok = send_reminder_email(appointment)

@@ -56,12 +56,12 @@ def send_reminder_email(appointment):
         print("No patient email found for reminder")
         return False
 
-    subject = "Reminder: Your Appointment Starts Soon ⏰"
+    subject = "Reminder: Your Appointment is Tomorrow 📅"
 
     message = f"""
 Hello {appointment.patient.first_name or appointment.patient.username},
 
-This is a friendly reminder that your appointment will begin shortly.
+This is a friendly reminder that your appointment is scheduled for tomorrow.
 
 Appointment Details
 -------------------
@@ -70,9 +70,9 @@ Date   : {appointment.appointment_date}
 Time   : {appointment.appointment_time}
 Reason : {appointment.reason}
 
-Please make sure you are ready.
+Please make sure you are available at the scheduled time.
 
-If you are unable to attend, kindly inform us as soon as possible.
+If you need to reschedule or cancel, kindly contact us in advance.
 
 Thank you,
 Healix Hospital Management System
@@ -86,7 +86,7 @@ Healix Hospital Management System
             [patient_email],
             fail_silently=False,
         )
-        print(f"Reminder email sent to {patient_email}")
+        print(f"24-hour reminder email sent to {patient_email}")
         return True
     except Exception as e:
         print("Reminder email error:", e)
