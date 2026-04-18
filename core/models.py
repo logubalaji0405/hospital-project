@@ -90,3 +90,18 @@ class Feedback(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.subject}"
+    
+
+class Branch(models.Model):
+    name = models.CharField(max_length=150)
+    city = models.CharField(max_length=100)
+    address = models.TextField()
+    phone = models.CharField(max_length=20)
+    email = models.EmailField()
+    description = models.TextField(blank=True, null=True)
+    map_embed_url = models.URLField(help_text="Paste Google Maps embed URL")
+    image = models.ImageField(upload_to='branches/', blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.city}"

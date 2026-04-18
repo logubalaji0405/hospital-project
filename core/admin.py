@@ -25,3 +25,13 @@ class ChatMessageAdmin(admin.ModelAdmin):
 @admin.register(Feedback)
 class FeedbackAdmin(admin.ModelAdmin):
     list_display = ('name', 'email', 'subject', 'rating', 'created_at')
+
+from django.contrib import admin
+from .models import Branch
+
+
+@admin.register(Branch)
+class BranchAdmin(admin.ModelAdmin):
+    list_display = ('name', 'city', 'phone', 'email', 'is_active')
+    list_filter = ('city', 'is_active')
+    search_fields = ('name', 'city', 'address', 'phone', 'email')

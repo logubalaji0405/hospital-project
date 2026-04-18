@@ -7,7 +7,7 @@ from django.db.models import Count
 from django.views.decorators.http import require_GET, require_POST
 from django.http import JsonResponse, HttpResponseForbidden
 
-from .models import Profile, Appointment, ChatMessage, ChatRoom, Feedback
+from .models import Profile, Appointment, ChatMessage, ChatRoom, Feedback,Branch
 from .utils import send_booking_confirmation_email
 from datetime import datetime
 from django.http import HttpResponse
@@ -489,41 +489,30 @@ def chat_notification_count(request):
 
 
 def about(request):
+    feedback_list = Feedback.objects.all().order_by('-id')[:6]
+    branches = Branch.objects.filter(is_active=True).order_by('city')
+
     if request.method == 'POST':
-        if not request.user.is_authenticated:
-            messages.error(request, "Please login as patient to submit feedback.")
-            return redirect('login')
+        if request.user.is_authenticated:
+            name = request.POST.get('name')
+            email = request.POST.get('email')
+            subject = request.POST.get('subject')
+            rating = request.POST.get('rating')
+            message = request.POST.get('message')
 
-        patient_profile = get_object_or_404(Profile, user=request.user)
-        if patient_profile.role != 'patient':
-            messages.error(request, "Only patients can submit feedback.")
+            Feedback.objects.create(
+                name=name,
+                email=email,
+                subject=subject,
+                rating=rating,
+                message=message
+            )
             return redirect('about')
 
-        name = request.POST.get('name', '').strip() or request.user.first_name or request.user.username
-        email = request.POST.get('email', '').strip() or request.user.email
-        subject = request.POST.get('subject', '').strip()
-        message = request.POST.get('message', '').strip()
-        rating = request.POST.get('rating', '5')
-
-        if not name or not email or not subject or not message:
-            messages.error(request, "Please fill all fields.")
-            return redirect('about')
-
-        Feedback.objects.create(
-            patient=request.user,
-            name=name,
-            email=email,
-            subject=subject,
-            message=message,
-            rating=int(rating)
-        )
-
-        messages.success(request, "Feedback submitted successfully.")
-        return redirect('about')
-
-    feedback_list = Feedback.objects.order_by('-created_at')[:6]
-    return render(request, 'about.html', {'feedback_list': feedback_list})
-
+    return render(request, 'about.html', {
+        'feedback_list': feedback_list,
+        'branches': branches
+    })
 
 @login_required
 def feedback_list(request):
