@@ -362,7 +362,10 @@
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
+document.addEventListener("DOMContentLoaded", function () {
+
     const chartLabels = [
         {% for item in daily_stats %}
             "{{ item.appointment_date }}",
@@ -377,31 +380,27 @@
 
     const ctx = document.getElementById('appointmentChart');
 
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: chartLabels,
-            datasets: [{
-                label: 'Appointments',
-                data: chartData,
-                borderWidth: 3,
-                fill: false,
-                tension: 0.3
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    display: true
-                }
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartLabels,
+                datasets: [{
+                    label: 'Appointments',
+                    data: chartData,
+                    borderWidth: 3,
+                    tension: 0.3
+                }]
             },
-            scales: {
-                y: {
-                    beginAtZero: true
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true }
                 }
             }
-        }
-    });
+        });
+    }
+
+});
 </script>
 {% endblock %}
