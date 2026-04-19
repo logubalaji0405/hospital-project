@@ -181,32 +181,47 @@ def doctor_dashboard(request):
 
 @login_required
 def admin_dashboard(request):
-    profile, _ = Profile.objects.get_or_create(
-        user=request.user,
-        defaults={
-            'role': 'admin' if request.user.is_superuser else 'patient',
-            'is_approved': True
-        }
-    )
-
-    if profile.role != 'admin':
+    if not hasattr(request.user, 'profile') or request.user.profile.role != 'admin':
+        messages.error(request, "Access denied.")
         return redirect('home')
 
-    pending_doctors = Profile.objects.filter(role='doctor', is_approved=False)
     total_patients = Profile.objects.filter(role='patient').count()
     total_doctors = Profile.objects.filter(role='doctor', is_approved=True).count()
     total_appointments = Appointment.objects.count()
+
+    pending_doctors = Profile.objects.filter(role='doctor', is_approved=False).select_related('user')
+    approved_doctors = Profile.objects.filter(role='doctor', is_approved=True).select_related('user')
+    recent_patients = Profile.objects.filter(role='patient').select_related('user').order_by('-id')[:6]
+
+    today = timezone.localdate()
+    today_appointments = Appointment.objects.filter(
+        appointment_date=today
+    ).select_related('patient', 'doctor').order_by('appointment_time')
+
+    today_appointments_count = today_appointments.count()
+    confirmed_appointments = Appointment.objects.filter(status='confirmed').count()
+    pending_appointments = Appointment.objects.filter(status='pending').count()
+
     daily_stats = Appointment.objects.values('appointment_date').annotate(
         total=Count('id')
-    ).order_by('-appointment_date')[:7]
+    ).order_by('-appointment_date')[:10]
 
-    return render(request, 'admin_dashboard.html', {
-        'pending_doctors': pending_doctors,
+    daily_stats = list(daily_stats)[::-1]
+
+    context = {
         'total_patients': total_patients,
         'total_doctors': total_doctors,
         'total_appointments': total_appointments,
+        'pending_doctors': pending_doctors,
+        'approved_doctors': approved_doctors,
+        'recent_patients': recent_patients,
+        'today_appointments': today_appointments,
+        'today_appointments_count': today_appointments_count,
+        'confirmed_appointments': confirmed_appointments,
+        'pending_appointments': pending_appointments,
         'daily_stats': daily_stats,
-    })
+    }
+    return render(request, 'admin_dashboard.html', context)
 
 
 def book_appointment(request):
@@ -300,18 +315,17 @@ def reject_booking(request, appointment_id):
 
 
 @login_required
-def approve_doctor(request, profile_id):
-    profile = get_object_or_404(Profile, user=request.user)
-    if profile.role != 'admin':
+def approve_doctor(request, doctor_id):
+    if not hasattr(request.user, 'profile') or request.user.profile.role != 'admin':
+        messages.error(request, "Access denied.")
         return redirect('home')
 
-    doctor_profile = get_object_or_404(Profile, id=profile_id, role='doctor')
-    doctor_profile.is_approved = True
-    doctor_profile.save()
+    doctor = get_object_or_404(Profile, id=doctor_id, role='doctor')
+    doctor.is_approved = True
+    doctor.save()
 
-    messages.success(request, "Doctor approved successfully.")
+    messages.success(request, f"{doctor.user.username} approved successfully.")
     return redirect('admin_dashboard')
-
 
 @login_required
 def doctor_list(request):
@@ -640,3 +654,16 @@ def resend_register_otp_view(request):
         messages.error(request, f"Failed to resend OTP: {e}")
 
     return redirect("verify_register_otp")
+
+@login_required
+def reject_doctor(request, doctor_id):
+    if not hasattr(request.user, 'profile') or request.user.profile.role != 'admin':
+        messages.error(request, "Access denied.")
+        return redirect('home')
+
+    doctor = get_object_or_404(Profile, id=doctor_id, role='doctor')
+    username = doctor.user.username
+    doctor.user.delete()
+
+    messages.success(request, f"{username} rejected and removed successfully.")
+    return redirect('admin_dashboard')

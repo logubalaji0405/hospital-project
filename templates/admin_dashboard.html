@@ -3,41 +3,107 @@
 
 {% block content %}
 <div class="container py-5">
-    <h2 class="mb-4 fw-bold text-primary">Admin Dashboard</h2>
 
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h2 class="fw-bold text-primary mb-1">Admin Dashboard</h2>
+            <p class="text-muted mb-0">Manage hospital users, appointments, and approvals</p>
+        </div>
+        <div>
+            <span class="badge bg-primary px-3 py-2 fs-6">Healix HMS Admin Panel</span>
+        </div>
+    </div>
+
+    <!-- Alerts -->
+    {% if pending_doctors %}
+    <div class="alert alert-warning shadow-sm border-0 rounded-4">
+        <strong>Attention:</strong> {{ pending_doctors|length }} doctor account{{ pending_doctors|length|pluralize }} waiting for approval.
+    </div>
+    {% else %}
+    <div class="alert alert-success shadow-sm border-0 rounded-4">
+        <strong>Great:</strong> No pending doctor approvals right now.
+    </div>
+    {% endif %}
+
+    <!-- Quick Actions -->
+    <div class="box mb-4">
+        <h4 class="mb-3">⚡ Quick Actions</h4>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="/admin/" class="btn btn-dark rounded-pill px-4">Django Admin</a>
+            <a href="{% url 'register' %}" class="btn btn-primary rounded-pill px-4">Add User</a>
+            <a href="{% url 'booking_history' %}" class="btn btn-outline-primary rounded-pill px-4">View Bookings</a>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
     <div class="row g-4 mb-4">
-        <div class="col-md-4">
-            <div class="card-stat">
+        <div class="col-lg-3 col-md-6">
+            <div class="card-stat blue-card">
+                <div class="icon-box">👤</div>
                 <h3>{{ total_patients }}</h3>
                 <p>Total Patients</p>
             </div>
         </div>
 
-        <div class="col-md-4">
-            <div class="card-stat">
+        <div class="col-lg-3 col-md-6">
+            <div class="card-stat green-card">
+                <div class="icon-box">👨‍⚕️</div>
                 <h3>{{ total_doctors }}</h3>
-                <p>Total Doctors</p>
+                <p>Approved Doctors</p>
             </div>
         </div>
 
-        <div class="col-md-4">
-            <div class="card-stat">
+        <div class="col-lg-3 col-md-6">
+            <div class="card-stat purple-card">
+                <div class="icon-box">📅</div>
                 <h3>{{ total_appointments }}</h3>
                 <p>Total Appointments</p>
             </div>
         </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="card-stat orange-card">
+                <div class="icon-box">⏳</div>
+                <h3>{{ pending_appointments }}</h3>
+                <p>Pending Appointments</p>
+            </div>
+        </div>
     </div>
 
+    <!-- Extra Stats -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="mini-stat-box">
+                <h5 class="mb-2">✅ Confirmed Appointments</h5>
+                <h3 class="text-success mb-0">{{ confirmed_appointments }}</h3>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mini-stat-box">
+                <h5 class="mb-2">📆 Today's Appointments</h5>
+                <h3 class="text-primary mb-0">{{ today_appointments_count }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Doctor Approval -->
     <div class="box mb-4">
-        <h4 class="mb-3">Doctor Approval</h4>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0">🩺 Doctor Approval Requests</h4>
+            <span class="badge bg-warning text-dark px-3 py-2">Pending: {{ pending_doctors|length }}</span>
+        </div>
+
         <div class="table-responsive">
-            <table class="table table-bordered table-hover">
+            <table class="table table-hover align-middle custom-table">
                 <thead class="table-primary">
                     <tr>
-                        <th>Doctor Name</th>
+                        <th>Name</th>
                         <th>Username</th>
                         <th>Department</th>
-                        <th>Approve</th>
+                        <th>Phone</th>
+                        <th>Status</th>
+                        <th width="180">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -45,16 +111,27 @@
                     <tr>
                         <td>{{ doctor.user.first_name|default:doctor.user.username }}</td>
                         <td>{{ doctor.user.username }}</td>
-                        <td>{{ doctor.department }}</td>
                         <td>
-                            <a href="{% url 'approve_doctor' doctor.id %}" class="btn btn-success btn-sm">
-                                Approve
-                            </a>
+                            <span class="badge bg-info text-dark">{{ doctor.department|default:"Not Added" }}</span>
+                        </td>
+                        <td>{{ doctor.phone|default:"-" }}</td>
+                        <td>
+                            <span class="badge bg-warning text-dark">Pending</span>
+                        </td>
+                        <td>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <a href="{% url 'approve_doctor' doctor.id %}" class="btn btn-success btn-sm rounded-pill px-3">
+                                    Approve
+                                </a>
+                                <a href="{% url 'reject_doctor' doctor.id %}" class="btn btn-danger btn-sm rounded-pill px-3">
+                                    Reject
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="4">No pending doctor approvals</td>
+                        <td colspan="6" class="text-center text-muted py-4">No pending doctor approvals</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -62,10 +139,124 @@
         </div>
     </div>
 
-    <div class="box">
-        <h4 class="mb-3">Day by Day Appointment Track</h4>
+    <div class="row g-4 mb-4">
+        <!-- Approved Doctors -->
+        <div class="col-lg-6">
+            <div class="box h-100">
+                <h4 class="mb-3">👨‍⚕️ Approved Doctors</h4>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle custom-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Department</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for doctor in approved_doctors %}
+                            <tr>
+                                <td>{{ doctor.user.first_name|default:doctor.user.username }}</td>
+                                <td>{{ doctor.department|default:"Not Added" }}</td>
+                                <td><span class="badge bg-success">Active</span></td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-4">No approved doctors found</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Patients -->
+        <div class="col-lg-6">
+            <div class="box h-100">
+                <h4 class="mb-3">🧑 Recent Patients</h4>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle custom-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Username</th>
+                                <th>Phone</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for patient in recent_patients %}
+                            <tr>
+                                <td>{{ patient.user.first_name|default:patient.user.username }}</td>
+                                <td>{{ patient.user.username }}</td>
+                                <td>{{ patient.phone|default:"-" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-4">No patients found</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Today's Appointments -->
+    <div class="box mb-4">
+        <h4 class="mb-3">📅 Today's Appointments</h4>
         <div class="table-responsive">
-            <table class="table table-bordered table-hover">
+            <table class="table table-hover align-middle custom-table">
+                <thead class="table-primary">
+                    <tr>
+                        <th>Patient</th>
+                        <th>Doctor</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for appt in today_appointments %}
+                    <tr>
+                        <td>{{ appt.patient.first_name|default:appt.patient.username }}</td>
+                        <td>{{ appt.doctor.first_name|default:appt.doctor.username }}</td>
+                        <td>{{ appt.appointment_date }}</td>
+                        <td>{{ appt.appointment_time }}</td>
+                        <td>
+                            {% if appt.status == 'confirmed' %}
+                                <span class="badge bg-success">Confirmed</span>
+                            {% elif appt.status == 'pending' %}
+                                <span class="badge bg-warning text-dark">Pending</span>
+                            {% elif appt.status == 'rejected' %}
+                                <span class="badge bg-danger">Rejected</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ appt.status }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-4">No appointments today</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Analytics -->
+    <div class="box mb-4">
+        <h4 class="mb-3">📊 Appointment Analytics</h4>
+        <canvas id="appointmentChart" height="100"></canvas>
+    </div>
+
+    <!-- Daily Track -->
+    <div class="box">
+        <h4 class="mb-3">📈 Day by Day Appointment Track</h4>
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover custom-table">
                 <thead class="table-primary">
                     <tr>
                         <th>Date</th>
@@ -76,11 +267,11 @@
                     {% for item in daily_stats %}
                     <tr>
                         <td>{{ item.appointment_date }}</td>
-                        <td>{{ item.total }}</td>
+                        <td><span class="badge bg-primary">{{ item.total }}</span></td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="2">No daily tracking data</td>
+                        <td colspan="2" class="text-center text-muted py-4">No daily tracking data</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -88,4 +279,129 @@
         </div>
     </div>
 </div>
+
+<style>
+    .box {
+        background: #ffffff;
+        border-radius: 22px;
+        padding: 24px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+        border: 1px solid #edf2ff;
+    }
+
+    .card-stat {
+        color: #fff;
+        border-radius: 22px;
+        padding: 28px 20px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+        transition: 0.3s ease;
+        height: 100%;
+    }
+
+    .card-stat:hover {
+        transform: translateY(-6px);
+    }
+
+    .blue-card {
+        background: linear-gradient(135deg, #0d6efd, #4f8dfd);
+    }
+
+    .green-card {
+        background: linear-gradient(135deg, #198754, #43c98f);
+    }
+
+    .purple-card {
+        background: linear-gradient(135deg, #6f42c1, #9b6dff);
+    }
+
+    .orange-card {
+        background: linear-gradient(135deg, #fd7e14, #ffab5c);
+    }
+
+    .icon-box {
+        font-size: 2rem;
+        margin-bottom: 12px;
+    }
+
+    .card-stat h3 {
+        font-size: 2rem;
+        font-weight: 800;
+        margin-bottom: 8px;
+    }
+
+    .card-stat p {
+        margin-bottom: 0;
+        opacity: 0.95;
+        font-weight: 500;
+    }
+
+    .mini-stat-box {
+        background: #fff;
+        border-radius: 20px;
+        padding: 24px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+        border: 1px solid #eef2ff;
+        height: 100%;
+    }
+
+    .custom-table th,
+    .custom-table td {
+        vertical-align: middle;
+    }
+
+    @media (max-width: 768px) {
+        .box {
+            padding: 18px;
+        }
+
+        .card-stat {
+            padding: 22px 16px;
+        }
+    }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const chartLabels = [
+        {% for item in daily_stats %}
+            "{{ item.appointment_date }}",
+        {% endfor %}
+    ];
+
+    const chartData = [
+        {% for item in daily_stats %}
+            {{ item.total }},
+        {% endfor %}
+    ];
+
+    const ctx = document.getElementById('appointmentChart');
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: chartLabels,
+            datasets: [{
+                label: 'Appointments',
+                data: chartData,
+                borderWidth: 3,
+                fill: false,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: true
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
 {% endblock %}
