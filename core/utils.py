@@ -1,6 +1,6 @@
 from django.core.mail import send_mail
 from django.conf import settings
-
+import random
 
 def send_booking_confirmation_email(appointment):
     patient_email = appointment.patient.email
@@ -102,3 +102,30 @@ Healix Hospital Team
     except Exception as e:
         print("Reminder email error:", e)
         return False
+    
+
+def generate_otp():
+    return str(random.randint(100000, 999999))
+
+
+def send_otp_email(user, otp):
+    subject = "Healix HMS Login OTP Verification"
+    message = f"""
+Hello {user.first_name or user.username},
+
+Your OTP for Healix HMS login is: {otp}
+
+This OTP is valid for 5 minutes.
+
+If you did not request this login, please ignore this email.
+
+Regards,
+Healix HMS
+"""
+    send_mail(
+        subject,
+        message,
+        settings.DEFAULT_FROM_EMAIL,
+        [user.email],
+        fail_silently=False,
+    )

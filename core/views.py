@@ -70,38 +70,6 @@ def register_view(request):
     return render(request, 'register.html')
 
 
-def login_view(request):
-    if request.user.is_authenticated:
-        return redirect('home')
-
-    if request.method == 'POST':
-        username = request.POST.get('username', '').strip()
-        password = request.POST.get('password', '')
-
-        user = authenticate(request, username=username, password=password)
-
-        if user is None:
-            messages.error(request, "Invalid username or password.")
-            return redirect('login')
-
-        profile, _ = Profile.objects.get_or_create(
-            user=user,
-            defaults={
-                'role': 'admin' if user.is_superuser else 'patient',
-                'is_approved': True
-            }
-        )
-
-        if profile.role == 'doctor' and not profile.is_approved:
-            messages.error(request, "Doctor account is waiting for admin approval.")
-            return redirect('login')
-
-        login(request, user)
-        messages.success(request, "Login successful.")
-        return redirect('home')
-
-    return render(request, 'login.html')
-
 
 def logout_view(request):
     logout(request)
@@ -565,3 +533,110 @@ def run_reminders(request):
                 print(f"Reminder failed for appointment #{appointment.id}")
 
     return HttpResponse(f"Matching appointments found: {found}, Reminders sent: {sent}")
+
+from .models import EmailOTP
+from .utils import generate_otp, send_otp_email
+
+
+def login_view(request):
+    if request.method == "POST":
+        username = request.POST.get("username")
+        password = request.POST.get("password")
+
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            if not user.email:
+                messages.error(request, "This account has no email address. Please contact admin.")
+                return redirect("login")
+
+            otp = generate_otp()
+
+            # old unused OTP delete
+            EmailOTP.objects.filter(user=user, is_used=False).delete()
+
+            EmailOTP.objects.create(user=user, otp=otp)
+
+            send_otp_email(user, otp)
+
+            request.session["otp_user_id"] = user.id
+            messages.success(request, "OTP sent to your email.")
+            return redirect("verify_otp")
+        else:
+            messages.error(request, "Invalid username or password.")
+
+    return render(request, "login.html")
+
+
+def verify_otp_view(request):
+    user_id = request.session.get("otp_user_id")
+
+    if not user_id:
+        messages.error(request, "Session expired. Please login again.")
+        return redirect("login")
+
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        messages.error(request, "User not found.")
+        return redirect("login")
+
+    if request.method == "POST":
+        entered_otp = request.POST.get("otp")
+
+        otp_obj = EmailOTP.objects.filter(user=user, is_used=False).order_by("-created_at").first()
+
+        if not otp_obj:
+            messages.error(request, "No OTP found. Please login again.")
+            return redirect("login")
+
+        if otp_obj.is_expired():
+            messages.error(request, "OTP expired. Please login again.")
+            return redirect("login")
+
+        if otp_obj.otp == entered_otp:
+            otp_obj.is_used = True
+            otp_obj.save()
+
+            login(request, user)
+
+            if "otp_user_id" in request.session:
+                del request.session["otp_user_id"]
+
+            messages.success(request, "Login successful.")
+
+            if hasattr(user, "profile"):
+                if user.profile.role == "admin":
+                    return redirect("admin_dashboard")
+                elif user.profile.role == "doctor":
+                    return redirect("doctor_dashboard")
+                else:
+                    return redirect("patient_dashboard")
+
+            return redirect("home")
+        else:
+            messages.error(request, "Invalid OTP.")
+
+    return render(request, "verify_otp.html")
+
+
+def resend_otp_view(request):
+    user_id = request.session.get("otp_user_id")
+
+    if not user_id:
+        messages.error(request, "Session expired. Please login again.")
+        return redirect("login")
+
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        messages.error(request, "User not found.")
+        return redirect("login")
+
+    otp = generate_otp()
+    EmailOTP.objects.filter(user=user, is_used=False).delete()
+    EmailOTP.objects.create(user=user, otp=otp)
+    send_otp_email(user, otp)
+
+    messages.success(request, "New OTP sent to your email.")
+    return redirect("verify_otp")
