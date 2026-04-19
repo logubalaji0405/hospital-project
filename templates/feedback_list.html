@@ -3,44 +3,229 @@
 
 {% block content %}
 <div class="container py-5">
+
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h2 class="fw-bold text-primary mb-1">Patient Feedback List</h2>
+            <p class="text-muted mb-0">View patient comments, ratings, suggestions, and service experience.</p>
+        </div>
+        <div>
+            <span class="badge bg-primary px-3 py-2 fs-6">Healix Feedback Panel</span>
+        </div>
+    </div>
+
+    <!-- Top Stats -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="feedback-stat blue-card">
+                <div class="stat-icon">💬</div>
+                <h3>{{ feedbacks|length }}</h3>
+                <p>Total Feedback</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="feedback-stat green-card">
+                <div class="stat-icon">⭐</div>
+                <h3>{{ avg_rating|default:"0.0" }}</h3>
+                <p>Average Rating</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="feedback-stat orange-card">
+                <div class="stat-icon">😊</div>
+                <h3>{{ high_rating_count|default:"0" }}</h3>
+                <p>Positive Reviews</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Table -->
     <div class="box">
-        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
             <div>
-                <h2 class="fw-bold text-primary mb-1">Patient Feedback List</h2>
-                <p class="text-muted mb-0">View all patient comments, ratings, and service suggestions.</p>
+                <h4 class="fw-bold mb-1">Feedback Records</h4>
+                <p class="text-muted mb-0">All submitted patient feedback entries.</p>
             </div>
         </div>
 
         <div class="table-responsive">
-            <table class="table table-bordered table-hover align-middle">
+            <table class="table table-hover align-middle custom-table">
                 <thead class="table-primary">
                     <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Subject</th>
-                        <th>Message</th>
-                        <th>Rating</th>
-                        <th>Date</th>
+                        <th width="14%">Name</th>
+                        <th width="18%">Email</th>
+                        <th width="16%">Subject</th>
+                        <th width="28%">Message</th>
+                        <th width="10%">Rating</th>
+                        <th width="14%">Date</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for item in feedbacks %}
                     <tr>
-                        <td>{{ item.name }}</td>
-                        <td>{{ item.email }}</td>
-                        <td>{{ item.subject }}</td>
-                        <td>{{ item.message }}</td>
-                        <td>{{ item.rating }}/5</td>
-                        <td>{{ item.created_at }}</td>
+                        <td>
+                            <div class="fw-semibold text-dark">{{ item.name }}</div>
+                        </td>
+                        <td>
+                            <span class="text-muted">{{ item.email }}</span>
+                        </td>
+                        <td>
+                            <span class="subject-badge">{{ item.subject }}</span>
+                        </td>
+                        <td>
+                            <div class="message-preview" title="{{ item.message }}">
+                                {{ item.message }}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="rating-wrap">
+                                {% if item.rating == 5 %}
+                                    <span class="badge bg-success">{{ item.rating }}/5</span>
+                                {% elif item.rating == 4 %}
+                                    <span class="badge bg-primary">{{ item.rating }}/5</span>
+                                {% elif item.rating == 3 %}
+                                    <span class="badge bg-warning text-dark">{{ item.rating }}/5</span>
+                                {% else %}
+                                    <span class="badge bg-danger">{{ item.rating }}/5</span>
+                                {% endif %}
+
+                                <div class="small text-warning mt-1">
+                                    {% if item.rating >= 1 %}★{% endif %}
+                                    {% if item.rating >= 2 %}★{% endif %}
+                                    {% if item.rating >= 3 %}★{% endif %}
+                                    {% if item.rating >= 4 %}★{% endif %}
+                                    {% if item.rating >= 5 %}★{% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="text-muted small">{{ item.created_at|date:"d M Y" }}</span><br>
+                            <span class="text-secondary small">{{ item.created_at|time:"h:i A" }}</span>
+                        </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="text-center">No feedback found</td>
+                        <td colspan="6" class="text-center py-5">
+                            <div class="empty-state">
+                                <div class="empty-icon">📝</div>
+                                <h5 class="fw-bold mt-3">No Feedback Found</h5>
+                                <p class="text-muted mb-0">Patient feedback entries will appear here once submitted.</p>
+                            </div>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
+
 </div>
+
+<style>
+    .box {
+        background: #ffffff;
+        border-radius: 24px;
+        padding: 28px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+        border: 1px solid #edf2ff;
+    }
+
+    .feedback-stat {
+        color: #fff;
+        border-radius: 22px;
+        padding: 26px 20px;
+        text-align: center;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.10);
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+
+    .feedback-stat:hover {
+        transform: translateY(-5px);
+    }
+
+    .blue-card {
+        background: linear-gradient(135deg, #0d6efd, #4f8dfd);
+    }
+
+    .green-card {
+        background: linear-gradient(135deg, #198754, #43c98f);
+    }
+
+    .orange-card {
+        background: linear-gradient(135deg, #fd7e14, #ffab5c);
+    }
+
+    .stat-icon {
+        font-size: 2rem;
+        margin-bottom: 10px;
+    }
+
+    .feedback-stat h3 {
+        font-size: 2rem;
+        font-weight: 800;
+        margin-bottom: 6px;
+    }
+
+    .feedback-stat p {
+        margin: 0;
+        font-weight: 500;
+        opacity: 0.95;
+    }
+
+    .custom-table thead th {
+        white-space: nowrap;
+        font-weight: 700;
+    }
+
+    .custom-table td,
+    .custom-table th {
+        vertical-align: middle;
+    }
+
+    .subject-badge {
+        display: inline-block;
+        background: #eef4ff;
+        color: #0d6efd;
+        border: 1px solid #d7e6ff;
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-size: 0.86rem;
+        font-weight: 600;
+    }
+
+    .message-preview {
+        max-width: 320px;
+        color: #495057;
+        line-height: 1.5;
+        word-break: break-word;
+    }
+
+    .rating-wrap {
+        min-width: 70px;
+    }
+
+    .empty-state {
+        padding: 20px 10px;
+    }
+
+    .empty-icon {
+        font-size: 3rem;
+    }
+
+    @media (max-width: 768px) {
+        .box {
+            padding: 18px;
+        }
+
+        .feedback-stat {
+            padding: 22px 16px;
+        }
+
+        .message-preview {
+            max-width: 220px;
+        }
+    }
+</style>
 {% endblock %}

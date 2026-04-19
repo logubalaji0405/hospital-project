@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.db.models import Count
 from django.views.decorators.http import require_GET, require_POST
 from django.http import JsonResponse, HttpResponseForbidden
-
+from django.db.models import Avg, Count, Q
 from .models import Profile, Appointment, ChatMessage, ChatRoom,RegistrationOTP, Feedback,Branch
 from .utils import send_booking_confirmation_email
 from datetime import datetime
@@ -504,15 +504,26 @@ def about(request):
         'branches': branches
     })
 
+
 @login_required
 def feedback_list(request):
-    profile = get_object_or_404(Profile, user=request.user)
-    if profile.role != 'admin':
+    if not hasattr(request.user, 'profile') or request.user.profile.role != 'admin':
+        messages.error(request, "Access denied.")
         return redirect('home')
 
-    feedbacks = Feedback.objects.select_related('patient').order_by('-created_at')
-    return render(request, 'feedback_list.html', {'feedbacks': feedbacks})
+    feedbacks = Feedback.objects.all().order_by('-created_at')
 
+    stats = feedbacks.aggregate(
+        avg_rating=Avg('rating'),
+        high_rating_count=Count('id', filter=Q(rating__gte=4))
+    )
+
+    context = {
+        'feedbacks': feedbacks,
+        'avg_rating': round(stats['avg_rating'], 1) if stats['avg_rating'] else 0,
+        'high_rating_count': stats['high_rating_count'] or 0,
+    }
+    return render(request, 'feedback_list.html', context)
 
 
 def run_reminders(request):
