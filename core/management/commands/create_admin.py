@@ -10,7 +10,7 @@ class Command(BaseCommand):
         User = get_user_model()
 
         username = os.getenv("DJANGO_SUPERUSER_USERNAME", "HMS-admin")
-        email = os.getenv("DJANGO_SUPERUSER_EMAIL", "admin@gmail.com")
+        email = os.getenv("DJANGO_SUPERUSER_EMAIL", "code.next.developer.2026@gmail.com")
         password = os.getenv("DJANGO_SUPERUSER_PASSWORD", "Hmsadmin@123")
 
         if User.objects.filter(username=username).exists():
