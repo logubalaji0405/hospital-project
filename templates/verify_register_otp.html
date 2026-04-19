@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Verify OTP{% endblock %}
+{% block title %}Verify Registration OTP{% endblock %}
 
 {% block content %}
 <div class="container py-5">
@@ -14,16 +14,18 @@
                 <form method="POST">
                     {% csrf_token %}
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">OTP Code</label>
+                        <label class="form-label fw-semibold">OTP</label>
                         <input type="text" name="otp" maxlength="6" class="form-control custom-input" placeholder="Enter 6-digit OTP" required>
                     </div>
 
                     <button type="submit" class="btn btn-primary w-100 login-btn mt-3">
-                        Verify OTP
+                        Verify and Create Account
                     </button>
 
                     <p class="text-center mt-3 mb-0">
-                        <a href="{% url 'resend_otp' %}" class="fw-semibold text-decoration-none">Resend OTP</a>
+                        <a href="{% url 'resend_register_otp' %}" class="fw-semibold text-decoration-none">
+                            Resend OTP
+                        </a>
                     </p>
                 </form>
             </div>
@@ -39,7 +41,6 @@
         padding: 40px 32px;
         border: 1px solid #e9f2ff;
     }
-
     .custom-input {
         height: 50px;
         border-radius: 14px;
@@ -47,23 +48,15 @@
         padding: 10px 14px;
         box-shadow: none;
     }
-
     .custom-input:focus {
         border-color: #0d6efd;
         box-shadow: 0 0 0 0.15rem rgba(13, 110, 253, 0.15);
     }
-
     .login-btn {
         height: 52px;
         border-radius: 14px;
         font-weight: 700;
         font-size: 1rem;
-    }
-
-    @media (max-width: 768px) {
-        .login-card {
-            padding: 28px 18px;
-        }
     }
 </style>
 {% endblock %}

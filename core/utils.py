@@ -104,20 +104,21 @@ Healix Hospital Team
         return False
     
 
+
 def generate_otp():
     return str(random.randint(100000, 999999))
 
 
-def send_otp_email(user, otp):
-    subject = "Healix HMS Login OTP Verification"
+def send_registration_otp(email, otp, username):
+    subject = "Healix HMS Registration OTP"
     message = f"""
-Hello {user.first_name or user.username},
+Hello {username},
 
-Your OTP for Healix HMS login is: {otp}
+Your OTP for Healix HMS account registration is: {otp}
 
 This OTP is valid for 5 minutes.
 
-If you did not request this login, please ignore this email.
+If you did not request this, please ignore this email.
 
 Regards,
 Healix HMS
@@ -126,6 +127,6 @@ Healix HMS
         subject,
         message,
         settings.DEFAULT_FROM_EMAIL,
-        [user.email],
-        fail_silently=False,
+        [email],
+        fail_silently=False
     )

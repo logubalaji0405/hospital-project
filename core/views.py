@@ -7,68 +7,89 @@ from django.db.models import Count
 from django.views.decorators.http import require_GET, require_POST
 from django.http import JsonResponse, HttpResponseForbidden
 
-from .models import Profile, Appointment, ChatMessage, ChatRoom, Feedback,Branch
+from .models import Profile, Appointment, ChatMessage, ChatRoom,RegistrationOTP, Feedback,Branch
 from .utils import send_booking_confirmation_email
 from datetime import datetime
 from django.http import HttpResponse
 from django.utils import timezone
 from .utils import send_reminder_email
-
+from .utils import generate_otp, send_registration_otp
+from django.contrib.auth.hashers import make_password
 def home(request):
     return render(request, 'home.html')
 
 
+
 def register_view(request):
-    if request.method == 'POST':
-        first_name = request.POST.get('first_name', '').strip()
-        username = request.POST.get('username', '').strip()
-        email = request.POST.get('email', '').strip()
-        phone = request.POST.get('phone', '').strip()
-        password1 = request.POST.get('password1', '')
-        password2 = request.POST.get('password2', '')
-        role = request.POST.get('role', 'patient').strip()
-        department = request.POST.get('department', '').strip()
-
-        if not first_name or not username or not email or not password1 or not password2:
-            messages.error(request, "Please fill all required fields.")
-            return redirect('register')
-
-        if password1 != password2:
-            messages.error(request, "Passwords do not match.")
-            return redirect('register')
+    if request.method == "POST":
+        username = request.POST.get("username")
+        email = request.POST.get("email")
+        password = request.POST.get("password")
+        role = request.POST.get("role", "patient")
 
         if User.objects.filter(username=username).exists():
             messages.error(request, "Username already exists.")
-            return redirect('register')
+            return redirect("register")
 
         if User.objects.filter(email=email).exists():
             messages.error(request, "Email already exists.")
-            return redirect('register')
+            return redirect("register")
 
-        if role == 'doctor' and not department:
-            messages.error(request, "Department is required for doctor registration.")
-            return redirect('register')
+        otp = generate_otp()
 
-        user = User.objects.create_user(
-            username=username,
-            first_name=first_name,
+        RegistrationOTP.objects.filter(email=email).delete()
+
+        RegistrationOTP.objects.create(
             email=email,
-            password=password1
-        )
-
-        Profile.objects.create(
-            user=user,
+            username=username,
+            otp=otp,
+            password=make_password(password),
             role=role,
-            phone=phone,
-            department=department if role == 'doctor' else '',
-            is_approved=False if role == 'doctor' else True
         )
 
-        messages.success(request, "Registration successful. Please login.")
-        return redirect('login')
+        try:
+            send_registration_otp(email, otp, username)
+            request.session["register_email"] = email
+            messages.success(request, f"OTP sent to {email}")
+            return redirect("verify_register_otp")
+        except Exception as e:
+            messages.error(request, f"OTP sending failed: {e}")
+            return redirect("register")
 
-    return render(request, 'register.html')
+    return render(request, "register.html")
 
+
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('home')
+
+    if request.method == 'POST':
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '')
+
+        user = authenticate(request, username=username, password=password)
+
+        if user is None:
+            messages.error(request, "Invalid username or password.")
+            return redirect('login')
+
+        profile, _ = Profile.objects.get_or_create(
+            user=user,
+            defaults={
+                'role': 'admin' if user.is_superuser else 'patient',
+                'is_approved': True
+            }
+        )
+
+        if profile.role == 'doctor' and not profile.is_approved:
+            messages.error(request, "Doctor account is waiting for admin approval.")
+            return redirect('login')
+
+        login(request, user)
+        messages.success(request, "Login successful.")
+        return redirect('home')
+
+    return render(request, 'login.html')
 
 
 def logout_view(request):
@@ -534,109 +555,88 @@ def run_reminders(request):
 
     return HttpResponse(f"Matching appointments found: {found}, Reminders sent: {sent}")
 
-from .models import EmailOTP
-from .utils import generate_otp, send_otp_email
 
+def verify_register_otp_view(request):
+    email = request.session.get("register_email")
 
-def login_view(request):
-    if request.method == "POST":
-        username = request.POST.get("username")
-        password = request.POST.get("password")
+    if not email:
+        messages.error(request, "Session expired. Please register again.")
+        return redirect("register")
 
-        user = authenticate(request, username=username, password=password)
+    otp_entry = RegistrationOTP.objects.filter(email=email).order_by("-created_at").first()
 
-        if user is not None:
-            if not user.email:
-                messages.error(request, "This account has no email address. Please contact admin.")
-                return redirect("login")
-
-            otp = generate_otp()
-
-            # old unused OTP delete
-            EmailOTP.objects.filter(user=user, is_used=False).delete()
-
-            EmailOTP.objects.create(user=user, otp=otp)
-
-            send_otp_email(user, otp)
-
-            request.session["otp_user_id"] = user.id
-            messages.success(request, "OTP sent to your email.")
-            return redirect("verify_otp")
-        else:
-            messages.error(request, "Invalid username or password.")
-
-    return render(request, "login.html")
-
-
-def verify_otp_view(request):
-    user_id = request.session.get("otp_user_id")
-
-    if not user_id:
-        messages.error(request, "Session expired. Please login again.")
-        return redirect("login")
-
-    try:
-        user = User.objects.get(id=user_id)
-    except User.DoesNotExist:
-        messages.error(request, "User not found.")
-        return redirect("login")
+    if not otp_entry:
+        messages.error(request, "No OTP request found.")
+        return redirect("register")
 
     if request.method == "POST":
         entered_otp = request.POST.get("otp")
 
-        otp_obj = EmailOTP.objects.filter(user=user, is_used=False).order_by("-created_at").first()
+        if otp_entry.is_expired():
+            messages.error(request, "OTP expired. Please register again.")
+            otp_entry.delete()
+            return redirect("register")
 
-        if not otp_obj:
-            messages.error(request, "No OTP found. Please login again.")
-            return redirect("login")
-
-        if otp_obj.is_expired():
-            messages.error(request, "OTP expired. Please login again.")
-            return redirect("login")
-
-        if otp_obj.otp == entered_otp:
-            otp_obj.is_used = True
-            otp_obj.save()
-
-            login(request, user)
-
-            if "otp_user_id" in request.session:
-                del request.session["otp_user_id"]
-
-            messages.success(request, "Login successful.")
-
-            if hasattr(user, "profile"):
-                if user.profile.role == "admin":
-                    return redirect("admin_dashboard")
-                elif user.profile.role == "doctor":
-                    return redirect("doctor_dashboard")
-                else:
-                    return redirect("patient_dashboard")
-
-            return redirect("home")
-        else:
+        if otp_entry.otp != entered_otp:
             messages.error(request, "Invalid OTP.")
+            return redirect("verify_register_otp")
 
-    return render(request, "verify_otp.html")
+        if User.objects.filter(username=otp_entry.username).exists():
+            messages.error(request, "Username already exists.")
+            otp_entry.delete()
+            return redirect("register")
 
+        if User.objects.filter(email=otp_entry.email).exists():
+            messages.error(request, "Email already exists.")
+            otp_entry.delete()
+            return redirect("register")
 
-def resend_otp_view(request):
-    user_id = request.session.get("otp_user_id")
+        user = User.objects.create(
+            username=otp_entry.username,
+            email=otp_entry.email,
+            password=otp_entry.password
+        )
 
-    if not user_id:
-        messages.error(request, "Session expired. Please login again.")
+        Profile.objects.create(
+            user=user,
+            role=otp_entry.role
+        )
+
+        otp_entry.is_verified = True
+        otp_entry.save()
+
+        del request.session["register_email"]
+
+        messages.success(request, "Registration successful. Please login.")
+        otp_entry.delete()
+
         return redirect("login")
 
-    try:
-        user = User.objects.get(id=user_id)
-    except User.DoesNotExist:
-        messages.error(request, "User not found.")
-        return redirect("login")
+    return render(request, "verify_register_otp.html")
+
+
+
+def resend_register_otp_view(request):
+    email = request.session.get("register_email")
+
+    if not email:
+        messages.error(request, "Session expired. Please register again.")
+        return redirect("register")
+
+    otp_entry = RegistrationOTP.objects.filter(email=email).order_by("-created_at").first()
+
+    if not otp_entry:
+        messages.error(request, "No registration found.")
+        return redirect("register")
 
     otp = generate_otp()
-    EmailOTP.objects.filter(user=user, is_used=False).delete()
-    EmailOTP.objects.create(user=user, otp=otp)
-    send_otp_email(user, otp)
+    otp_entry.otp = otp
+    otp_entry.save()
 
-    messages.success(request, "New OTP sent to your email.")
-    return redirect("verify_otp")
+    try:
+        send_registration_otp(email, otp, otp_entry.username)
+        messages.success(request, "New OTP sent successfully.")
+    except Exception as e:
+        messages.error(request, f"Failed to resend OTP: {e}")
+
+    return redirect("verify_register_otp")
