@@ -61,7 +61,14 @@ def register_view(request):
 
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect('home')
+        if hasattr(request.user, "profile"):
+            if request.user.profile.role == "admin":
+                return redirect("admin_dashboard")
+            elif request.user.profile.role == "doctor":
+                return redirect("doctor_dashboard")
+            else:
+                return redirect("patient_dashboard")
+        return redirect("home")
 
     if request.method == 'POST':
         username = request.POST.get('username', '').strip()
@@ -73,7 +80,7 @@ def login_view(request):
             messages.error(request, "Invalid username or password.")
             return redirect('login')
 
-        profile, _ = Profile.objects.get_or_create(
+        profile, created = Profile.objects.get_or_create(
             user=user,
             defaults={
                 'role': 'admin' if user.is_superuser else 'patient',
@@ -87,9 +94,38 @@ def login_view(request):
 
         login(request, user)
         messages.success(request, "Login successful.")
-        return redirect('home')
+
+        if profile.role == "admin":
+            return redirect("admin_dashboard")
+        elif profile.role == "doctor":
+            return redirect("doctor_dashboard")
+        else:
+            return redirect("patient_dashboard")
 
     return render(request, 'login.html')
+
+
+
+@login_required
+def reject_doctor(request, doctor_id):
+    doctor = get_object_or_404(Profile, id=doctor_id, role='doctor')
+    doctor.user.delete()
+
+    messages.success(request, "Doctor rejected.")
+    return redirect("admin_dashboard")
+
+@login_required
+def approve_doctor(request, doctor_id):
+    if not hasattr(request.user, "profile") or request.user.profile.role != "admin":
+        messages.error(request, "Access denied.")
+        return redirect("home")
+
+    doctor = get_object_or_404(Profile, id=doctor_id, role="doctor")
+    doctor.is_approved = True
+    doctor.save()
+
+    messages.success(request, f"{doctor.user.username} approved successfully.")
+    return redirect("admin_dashboard")
 
 
 def logout_view(request):
