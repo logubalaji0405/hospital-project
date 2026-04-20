@@ -21,52 +21,47 @@ def home(request):
 
 
 def register_view(request):
-    if request.method == 'POST':
-        first_name = request.POST.get('first_name')
-        username = request.POST.get('username')
-        email = request.POST.get('email')
-        phone = request.POST.get('phone')
-        role = request.POST.get('role')
-        department = request.POST.get('department')
-        password = request.POST.get('password')
-        confirm_password = request.POST.get('confirm_password')
-
-        if password != confirm_password:
-            messages.error(request, "Passwords do not match.")
-            return redirect('register')
+    if request.method == "POST":
+        username = request.POST.get("username", "").strip()
+        email = request.POST.get("email", "").strip()
+        password = request.POST.get("password", "")
+        role = request.POST.get("role", "patient").strip()
+        
+        if not username or not email or not password:
+            messages.error(request, "All fields are required.")
+            return redirect("register")
 
         if User.objects.filter(username=username).exists():
             messages.error(request, "Username already exists.")
-            return redirect('register')
+            return redirect("register")
 
         if User.objects.filter(email=email).exists():
             messages.error(request, "Email already exists.")
-            return redirect('register')
+            return redirect("register")
 
-        user = User.objects.create_user(
-            username=username,
+        otp = generate_otp()
+
+        RegistrationOTP.objects.filter(email=email).delete()
+
+        RegistrationOTP.objects.create(
             email=email,
-            password=password,
-            first_name=first_name
-        )
-
-        profile = Profile.objects.create(
-            user=user,
+            username=username,
+            otp=otp,
+            password=make_password(password),
             role=role,
-            phone=phone,
-            department=department if role == 'doctor' else '',
-            is_approved=False if role == 'doctor' else True
         )
 
-        messages.success(
-            request,
-            "Registration successful. Doctor accounts need admin approval."
-            if role == 'doctor' else
-            "Registration successful."
-        )
-        return redirect('login')
+        try:
+            send_registration_otp(email, otp, username)
+            request.session["register_email"] = email
+            messages.success(request, f"OTP sent to {email}")
+            return redirect("verify_register_otp")
+        except Exception as e:
+            messages.error(request, f"OTP sending failed: {e}")
+            return redirect("register")
 
-    return render(request, 'register.html')
+    return render(request, "register.html")
+
 
 
 def login_view(request):
@@ -232,41 +227,49 @@ def doctor_dashboard(request):
 
 @login_required
 def admin_dashboard(request):
-    pending_doctors = Profile.objects.filter(role='doctor', is_approved=False).select_related('user')
-    approved_doctors = Profile.objects.filter(role='doctor', is_approved=True).select_related('user')
-    recent_patients = Profile.objects.filter(role='patient').select_related('user').order_by('-id')[:10]
+    if not hasattr(request.user, 'profile') or request.user.profile.role != 'admin':
+        messages.error(request, "Access denied.")
+        return redirect('home')
 
     total_patients = Profile.objects.filter(role='patient').count()
     total_doctors = Profile.objects.filter(role='doctor', is_approved=True).count()
     total_appointments = Appointment.objects.count()
-    pending_appointments = Appointment.objects.filter(status='pending').count()
-    confirmed_appointments = Appointment.objects.filter(status='confirmed').count()
 
+    pending_doctors = Profile.objects.filter(role='doctor', is_approved=False).select_related('user')
+    approved_doctors = Profile.objects.filter(role='doctor', is_approved=True).select_related('user')
+    recent_patients = Profile.objects.filter(role='patient').select_related('user').order_by('-id')[:6]
+    department = Profile.objects.filter(role='doctor').values_list('department', flat=True).distinct()
     today = timezone.localdate()
-    today_appointments = Appointment.objects.filter(appointment_date=today).select_related('patient', 'doctor')
-    today_appointments_count = today_appointments.count()
+    today_appointments = Appointment.objects.filter(
+        appointment_date=today
+    ).select_related('patient', 'doctor').order_by('appointment_time')
 
-    daily_stats = (
-        Appointment.objects
-        .values('appointment_date')
-        .annotate(total=Count('id'))
-        .order_by('appointment_date')
-    )
+    today_appointments_count = today_appointments.count()
+    confirmed_appointments = Appointment.objects.filter(status='confirmed').count()
+    pending_appointments = Appointment.objects.filter(status='pending').count()
+
+    daily_stats = Appointment.objects.values('appointment_date').annotate(
+        total=Count('id')
+    ).order_by('-appointment_date')[:10]
+
+    daily_stats = list(daily_stats)[::-1]
 
     context = {
-        'pending_doctors': pending_doctors,
-        'approved_doctors': approved_doctors,
-        'recent_patients': recent_patients,
         'total_patients': total_patients,
         'total_doctors': total_doctors,
         'total_appointments': total_appointments,
-        'pending_appointments': pending_appointments,
-        'confirmed_appointments': confirmed_appointments,
+        'pending_doctors': pending_doctors,
+        'approved_doctors': approved_doctors,
+        'recent_patients': recent_patients,
         'today_appointments': today_appointments,
         'today_appointments_count': today_appointments_count,
+        'confirmed_appointments': confirmed_appointments,
+        'pending_appointments': pending_appointments,
         'daily_stats': daily_stats,
+        'department':department,
     }
     return render(request, 'admin_dashboard.html', context)
+
 
 def book_appointment(request):
     doctors = User.objects.filter(profile__role='doctor')
