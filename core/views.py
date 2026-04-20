@@ -240,7 +240,7 @@ def admin_dashboard(request):
     pending_doctors = Profile.objects.filter(role='doctor', is_approved=False).select_related('user')
     approved_doctors = Profile.objects.filter(role='doctor', is_approved=True).select_related('user')
     recent_patients = Profile.objects.filter(role='patient').select_related('user').order_by('-id')[:6]
-
+    department = Profile.objects.filter(role='doctor').values_list('department', flat=True).distinct()
     today = timezone.localdate()
     today_appointments = Appointment.objects.filter(
         appointment_date=today
