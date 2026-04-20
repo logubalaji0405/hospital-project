@@ -8,8 +8,8 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
     path("register/verify-otp/", views.verify_register_otp_view, name="verify_register_otp"),
     path("register/resend-otp/", views.resend_register_otp_view, name="resend_register_otp"),
-    path('approve-doctor/<int:doctor_id>/', views.approve_doctor, name="approve_doctor"),
-    path('reject-doctor/<int:doctor_id>/', views.reject_doctor, name="reject_doctor"),
+    path("approve-doctor/<int:doctor_id>/", views.approve_doctor, name="approve_doctor"),
+    path("reject-doctor/<int:doctor_id>/", views.reject_doctor, name="reject_doctor"),
 
     path('profile/', views.profile_view, name='profile'),
     path('profile/edit/', views.edit_profile, name='edit_profile'),

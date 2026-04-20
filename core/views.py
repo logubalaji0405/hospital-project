@@ -65,32 +65,35 @@ def login_view(request):
             if request.user.profile.role == "admin":
                 return redirect("admin_dashboard")
             elif request.user.profile.role == "doctor":
-                return redirect("doctor_dashboard")
+                if request.user.profile.is_approved:
+                    return redirect("doctor_dashboard")
+                return render(request, "doctor_pending.html")
             else:
                 return redirect("patient_dashboard")
         return redirect("home")
 
-    if request.method == 'POST':
-        username = request.POST.get('username', '').strip()
-        password = request.POST.get('password', '')
+    if request.method == "POST":
+        username = request.POST.get("username", "").strip()
+        password = request.POST.get("password", "")
 
         user = authenticate(request, username=username, password=password)
 
         if user is None:
             messages.error(request, "Invalid username or password.")
-            return redirect('login')
+            return redirect("login")
 
-        profile, created = Profile.objects.get_or_create(
+        profile, _ = Profile.objects.get_or_create(
             user=user,
             defaults={
-                'role': 'admin' if user.is_superuser else 'patient',
-                'is_approved': True
+                "role": "admin" if user.is_superuser else "patient",
+                "is_approved": True
             }
         )
 
-        if profile.role == 'doctor' and not profile.is_approved:
+        # doctor cannot login before admin approval
+        if profile.role == "doctor" and not profile.is_approved:
             messages.error(request, "Doctor account is waiting for admin approval.")
-            return redirect('login')
+            return render(request, "doctor_pending.html")
 
         login(request, user)
         messages.success(request, "Login successful.")
@@ -102,17 +105,13 @@ def login_view(request):
         else:
             return redirect("patient_dashboard")
 
-    return render(request, 'login.html')
-
-
+    return render(request, "login.html")
 
 @login_required
-def reject_doctor(request, doctor_id):
-    doctor = get_object_or_404(Profile, id=doctor_id, role='doctor')
-    doctor.user.delete()
-
-    messages.success(request, "Doctor rejected.")
-    return redirect("admin_dashboard")
+def logout_view(request):
+    logout(request)
+    messages.success(request, "Logged out successfully.")
+    return redirect("login")
 
 @login_required
 def approve_doctor(request, doctor_id):
@@ -126,13 +125,19 @@ def approve_doctor(request, doctor_id):
 
     messages.success(request, f"{doctor.user.username} approved successfully.")
     return redirect("admin_dashboard")
+  
+@login_required
+def reject_doctor(request, doctor_id):
+    if not hasattr(request.user, "profile") or request.user.profile.role != "admin":
+        messages.error(request, "Access denied.")
+        return redirect("home")
 
+    doctor = get_object_or_404(Profile, id=doctor_id, role="doctor")
+    username = doctor.user.username
+    doctor.user.delete()
 
-def logout_view(request):
-    logout(request)
-    messages.success(request, "Logged out successfully.")
-    return redirect('login')
-
+    messages.success(request, f"{username} rejected successfully.")
+    return redirect("admin_dashboard")
 
 @login_required
 def profile_view(request):
