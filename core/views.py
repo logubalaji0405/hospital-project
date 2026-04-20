@@ -26,7 +26,8 @@ def register_view(request):
         email = request.POST.get("email", "").strip()
         password = request.POST.get("password", "")
         role = request.POST.get("role", "patient").strip()
-
+        department = request.POST.get("department")
+        
         if not username or not email or not password:
             messages.error(request, "All fields are required.")
             return redirect("register")
@@ -49,6 +50,7 @@ def register_view(request):
             otp=otp,
             password=make_password(password),
             role=role,
+            department=department 
         )
 
         try:
@@ -103,11 +105,11 @@ def login_view(request):
         messages.success(request, "Login successful.")
 
         if profile.role == "admin":
-            return redirect("admin_dashboard")
+            return redirect("home")
         elif profile.role == "doctor":
-            return redirect("doctor_dashboard")
+            return redirect("home")
         else:
-            return redirect("patient_dashboard")
+            return redirect("home")
 
     return render(request, "login.html")
 

@@ -123,6 +123,7 @@ class RegistrationOTP(models.Model):
     role = models.CharField(max_length=20, default='patient')
     created_at = models.DateTimeField(auto_now_add=True)
     is_verified = models.BooleanField(default=False)
+    department = request.POST.get("department", "")
 
     def is_expired(self):
         return timezone.now() > self.created_at + timedelta(minutes=5)
