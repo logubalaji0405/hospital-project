@@ -268,6 +268,7 @@ def admin_dashboard(request):
         'confirmed_appointments': confirmed_appointments,
         'pending_appointments': pending_appointments,
         'daily_stats': daily_stats,
+        'department':department,
     }
     return render(request, 'admin_dashboard.html', context)
 
