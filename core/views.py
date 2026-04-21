@@ -87,7 +87,7 @@ def login_view(request):
             messages.error(request, "Invalid username or password.")
             return redirect("login")
 
-        profile, _ = Profile.objects.get_or_create(
+        profile, created = Profile.objects.get_or_create(
             user=user,
             defaults={
                 "role": "admin" if user.is_superuser else "patient",
@@ -96,7 +96,7 @@ def login_view(request):
         )
 
         if profile.role == "doctor" and not profile.is_approved:
-            messages.error(request, "Doctor account is waiting for admin approval.")
+            messages.warning(request, "Your doctor account is waiting for admin approval.")
             return render(request, "doctor_pending.html")
 
         login(request, user)
@@ -120,17 +120,18 @@ def logout_view(request):
 
 @login_required
 def approve_doctor(request, doctor_id):
-    if not hasattr(request.user, "profile") or request.user.profile.role != "admin":
+    if not hasattr(request.user, 'profile') or request.user.profile.role != 'admin':
         messages.error(request, "Access denied.")
-        return redirect("home")
+        return redirect('home')
 
-    doctor = get_object_or_404(Profile, id=doctor_id, role="doctor")
+    doctor = get_object_or_404(Profile, id=doctor_id, role='doctor')
     doctor.is_approved = True
     doctor.save()
 
     messages.success(request, f"{doctor.user.username} approved successfully.")
-    return redirect("admin_dashboard")
-  
+    return redirect('admin_dashboard')
+
+
 @login_required
 def reject_doctor(request, doctor_id):
     if not hasattr(request.user, "profile") or request.user.profile.role != "admin":
@@ -238,7 +239,7 @@ def admin_dashboard(request):
     pending_doctors = Profile.objects.filter(role='doctor', is_approved=False).select_related('user')
     approved_doctors = Profile.objects.filter(role='doctor', is_approved=True).select_related('user')
     recent_patients = Profile.objects.filter(role='patient').select_related('user').order_by('-id')[:6]
-    department = Profile.objects.filter(role='doctor').values_list('department', flat=True).distinct()
+
     today = timezone.localdate()
     today_appointments = Appointment.objects.filter(
         appointment_date=today
@@ -266,10 +267,10 @@ def admin_dashboard(request):
         'confirmed_appointments': confirmed_appointments,
         'pending_appointments': pending_appointments,
         'daily_stats': daily_stats,
-        'department':department,
     }
     return render(request, 'admin_dashboard.html', context)
 
+    
 
 def book_appointment(request):
     doctors = User.objects.filter(profile__role='doctor')
@@ -647,6 +648,7 @@ def verify_register_otp_view(request):
         if otp_entry.is_expired():
             messages.error(request, "OTP expired. Please register again.")
             otp_entry.delete()
+            request.session.pop("register_email", None)
             return redirect("register")
 
         if otp_entry.otp != entered_otp:
@@ -656,35 +658,42 @@ def verify_register_otp_view(request):
         if User.objects.filter(username=otp_entry.username).exists():
             messages.error(request, "Username already exists.")
             otp_entry.delete()
+            request.session.pop("register_email", None)
             return redirect("register")
 
         if User.objects.filter(email=otp_entry.email).exists():
             messages.error(request, "Email already exists.")
             otp_entry.delete()
+            request.session.pop("register_email", None)
             return redirect("register")
 
         user = User.objects.create(
             username=otp_entry.username,
             email=otp_entry.email,
-            password=otp_entry.password
+            first_name=otp_entry.first_name or "",
+            password=otp_entry.password,
         )
 
         Profile.objects.create(
             user=user,
             role=otp_entry.role,
+            phone=otp_entry.phone or "",
+            department=otp_entry.department if otp_entry.role == "doctor" else "",
             is_approved=False if otp_entry.role == "doctor" else True
         )
 
-        otp_entry.is_verified = True
-        otp_entry.save()
-
         request.session.pop("register_email", None)
-
-        messages.success(request, "Registration successful. Please login.")
         otp_entry.delete()
+
+        if otp_entry.role == "doctor":
+            messages.success(request, "Doctor registration successful. Please wait for admin approval.")
+        else:
+            messages.success(request, "Registration successful. Please login.")
+
         return redirect("login")
 
     return render(request, "verify_register_otp.html")
+
 
 
 def resend_register_otp_view(request):
