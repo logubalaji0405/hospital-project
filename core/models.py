@@ -123,6 +123,7 @@ class RegistrationOTP(models.Model):
     first_name = models.CharField(max_length=100,blank=True,default='')   # ✅ ADD THIS
     last_name = models.CharField(max_length=100,blank=True,default='')    # ✅ ADD THIS
     role = models.CharField(max_length=20, default='patient')
+    phone=models.CharField(max_length=20, blank=True, null=True)  # ✅ ADD THIS
     created_at = models.DateTimeField(auto_now_add=True)
     is_verified = models.BooleanField(default=False)
 
