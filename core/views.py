@@ -12,6 +12,7 @@ from .utils import send_booking_confirmation_email
 from datetime import datetime
 from django.http import HttpResponse
 from django.utils import timezone
+import random
 from .utils import send_reminder_email
 from .utils import generate_otp, send_registration_otp
 from django.contrib.auth.hashers import make_password
