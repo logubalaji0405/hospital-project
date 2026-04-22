@@ -21,8 +21,8 @@ def home(request):
 
 from django.shortcuts import render
 
-def doctor_pending_approval(request):
-    return render(request, "doctor_pending_approval.html")
+def doctor_pending(request):
+    return render(request, "doctor_pending.html")
 
 def register_view(request):
     if request.method == "POST":
