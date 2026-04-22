@@ -120,6 +120,8 @@ class RegistrationOTP(models.Model):
     username = models.CharField(max_length=150)
     otp = models.CharField(max_length=6)
     password = models.CharField(max_length=128)  # temporary store before account creation
+    first_name = models.CharField(max_length=100,blank=True,default='')   # ✅ ADD THIS
+    last_name = models.CharField(max_length=100,blank=True,default='')    # ✅ ADD THIS
     role = models.CharField(max_length=20, default='patient')
     created_at = models.DateTimeField(auto_now_add=True)
     is_verified = models.BooleanField(default=False)
