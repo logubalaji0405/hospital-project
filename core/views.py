@@ -26,19 +26,34 @@ def doctor_pending_approval(request):
 
 def register_view(request):
     if request.method == "POST":
-        first_name = request.POST.get("first_name")
-        email = request.POST.get("email")
-        phone = request.POST.get("phone")
-        password = request.POST.get("password")
-        role = request.POST.get("role")
-        department = request.POST.get("department") if role == "doctor" else ""
+        first_name = request.POST.get("first_name", "").strip()
+        username = request.POST.get("username", "").strip()
+        email = request.POST.get("email", "").strip()
+        phone = request.POST.get("phone", "").strip()
+        password = request.POST.get("password", "")
+        confirm_password = request.POST.get("confirm_password", "")
+        role = request.POST.get("role", "patient")
+        department = request.POST.get("department", "").strip() if role == "doctor" else ""
 
-        otp = str(random.randint(100000, 999999))
+        if password != confirm_password:
+            messages.error(request, "Passwords do not match.")
+            return redirect("register")
+
+        if User.objects.filter(username=username).exists():
+            messages.error(request, "Username already exists.")
+            return redirect("register")
+
+        if User.objects.filter(email=email).exists():
+            messages.error(request, "Email already registered.")
+            return redirect("register")
+
+        otp = generate_otp()
 
         RegistrationOTP.objects.filter(email=email).delete()
 
         RegistrationOTP.objects.create(
             first_name=first_name,
+            username=username,
             email=email,
             phone=phone,
             password=password,
@@ -49,12 +64,16 @@ def register_view(request):
 
         request.session["register_email"] = email
 
-        # send otp mail here
+        try:
+            send_registration_otp(email, otp, first_name)
+            messages.success(request, "OTP sent to your email.")
+        except Exception as e:
+            messages.error(request, f"Failed to send OTP: {e}")
+            return redirect("register")
 
         return redirect("verify_register_otp")
 
     return render(request, "register.html")
-
 
 
 def login_view(request):

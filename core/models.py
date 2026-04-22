@@ -121,13 +121,14 @@ class RegistrationOTP(models.Model):
         ('doctor', 'Doctor'),
     )
 
-    email = models.EmailField()
-    otp = models.CharField(max_length=6)
     first_name = models.CharField(max_length=100)
+    username = models.CharField(max_length=150,default="")
+    email = models.EmailField()
     phone = models.CharField(max_length=15, blank=True, null=True)
     password = models.CharField(max_length=255)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='patient')
     department = models.CharField(max_length=100, blank=True, null=True)
+    otp = models.CharField(max_length=6)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
