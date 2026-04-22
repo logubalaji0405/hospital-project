@@ -639,12 +639,12 @@ def verify_register_otp_view(request):
             messages.error(request, "Invalid OTP.")
             return redirect("verify_register_otp")
 
-        if User.objects.filter(username=otp_entry.email).exists():
+        if User.objects.filter(username=otp_entry.username).exists():
             messages.warning(request, "User already exists. Please login.")
             return redirect("login")
 
         user = User.objects.create_user(
-            username=otp_entry.email,
+            username=otp_entry.username,
             email=otp_entry.email,
             password=otp_entry.password,
             first_name=otp_entry.first_name
