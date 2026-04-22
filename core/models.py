@@ -21,7 +21,7 @@ class Profile(models.Model):
     description = models.TextField(blank=True, null=True)
     is_approved = models.BooleanField(default=True)
     profile_image = models.ImageField(upload_to='profiles/', blank=True, null=True)
-    department = models.CharField(max_length=100, blank=True, null=True)    
+       
     def __str__(self):
         return f"{self.user.username} - {self.role}"
 
@@ -116,20 +116,19 @@ class Branch(models.Model):
     
 
 class RegistrationOTP(models.Model):
-    email = models.EmailField()
-    username = models.CharField(max_length=150)
-    otp = models.CharField(max_length=6)
-    password = models.CharField(max_length=128)  # temporary store before account creation
-    first_name = models.CharField(max_length=100,blank=True,default='')   # ✅ ADD THIS
-    last_name = models.CharField(max_length=100,blank=True,default='')    # ✅ ADD THIS
-    role = models.CharField(max_length=20, default='patient')
-    department = models.CharField(max_length=100, blank=True, null=True)  # ✅ ADD THIS
-    phone=models.CharField(max_length=20, blank=True, null=True)  # ✅ ADD THIS
-    created_at = models.DateTimeField(auto_now_add=True)
-    is_verified = models.BooleanField(default=False)
+    ROLE_CHOICES = (
+        ('patient', 'Patient'),
+        ('doctor', 'Doctor'),
+    )
 
-    def is_expired(self):
-        return timezone.now() > self.created_at + timedelta(minutes=5)
+    email = models.EmailField()
+    otp = models.CharField(max_length=6)
+    first_name = models.CharField(max_length=100)
+    phone = models.CharField(max_length=15, blank=True, null=True)
+    password = models.CharField(max_length=255)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='patient')
+    department = models.CharField(max_length=100, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.username} - {self.email} - {self.otp}"
+        return self.email

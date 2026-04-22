@@ -18,96 +18,70 @@ from django.contrib.auth.hashers import make_password
 def home(request):
     return render(request, 'home.html')
 
+from django.shortcuts import render
 
+def doctor_pending_approval(request):
+    return render(request, "doctor_pending_approval.html")
 
 def register_view(request):
     if request.method == "POST":
-        username = request.POST.get("username", "").strip()
-        email = request.POST.get("email", "").strip()
-        password = request.POST.get("password", "")
-        role = request.POST.get("role", "patient").strip()
-        
-        if not username or not email or not password:
-            messages.error(request, "All fields are required.")
-            return redirect("register")
+        first_name = request.POST.get("first_name")
+        email = request.POST.get("email")
+        phone = request.POST.get("phone")
+        password = request.POST.get("password")
+        role = request.POST.get("role")
+        department = request.POST.get("department") if role == "doctor" else ""
 
-        if User.objects.filter(username=username).exists():
-            messages.error(request, "Username already exists.")
-            return redirect("register")
-
-        if User.objects.filter(email=email).exists():
-            messages.error(request, "Email already exists.")
-            return redirect("register")
-
-        otp = generate_otp()
+        otp = str(random.randint(100000, 999999))
 
         RegistrationOTP.objects.filter(email=email).delete()
 
         RegistrationOTP.objects.create(
+            first_name=first_name,
             email=email,
-            username=username,
-            otp=otp,
-            password=make_password(password),
+            phone=phone,
+            password=password,
             role=role,
+            department=department,
+            otp=otp
         )
 
-        try:
-            send_registration_otp(email, otp, username)
-            request.session["register_email"] = email
-            messages.success(request, f"OTP sent to {email}")
-            return redirect("verify_register_otp")
-        except Exception as e:
-            messages.error(request, f"OTP sending failed: {e}")
-            return redirect("register")
+        request.session["register_email"] = email
+
+        # send otp mail here
+
+        return redirect("verify_register_otp")
 
     return render(request, "register.html")
 
 
 
 def login_view(request):
-    if request.user.is_authenticated:
-        if hasattr(request.user, "profile"):
-            if request.user.profile.role == "admin":
-                return redirect("admin_dashboard")
-            elif request.user.profile.role == "doctor":
-                if request.user.profile.is_approved:
-                    return redirect("doctor_dashboard")
-                return render(request, "doctor_pending.html")
-            else:
-                return redirect("patient_dashboard")
-        return redirect("home")
-
     if request.method == "POST":
-        username = request.POST.get("username", "").strip()
-        password = request.POST.get("password", "")
+        username = request.POST.get("username")
+        password = request.POST.get("password")
 
         user = authenticate(request, username=username, password=password)
 
-        if user is None:
-            messages.error(request, "Invalid username or password.")
-            return redirect("login")
+        if user is not None:
+            profile = getattr(user, "profile", None)
 
-        profile, created = Profile.objects.get_or_create(
-            user=user,
-            defaults={
-                "role": "admin" if user.is_superuser else "patient",
-                "is_approved": True
-            }
-        )
+            if profile and profile.role == "doctor" and not profile.is_approved:
+                return render(request, "doctor_pending_approval.html")
 
-        if profile.role == "doctor" and not profile.is_approved:
-            messages.warning(request, "Your doctor account is waiting for admin approval.")
-            return render(request, "doctor_pending.html")
+            login(request, user)
 
-        login(request, user)
-        messages.success(request, "Login successful.")
+            if profile:
+                if profile.role == "admin":
+                    return redirect("admin_dashboard")
+                elif profile.role == "doctor":
+                    return redirect("doctor_dashboard")
+                else:
+                    return redirect("patient_dashboard")
 
-        if profile.role == "admin":
             return redirect("home")
-        elif profile.role == "doctor":
-            return redirect("home")
-        else:
-            return redirect("home")
+
+        messages.error(request, "Invalid username or password")
 
     return render(request, "login.html")
 
@@ -636,64 +610,44 @@ def verify_register_otp_view(request):
         messages.error(request, "Session expired. Please register again.")
         return redirect("register")
 
-    otp_entry = RegistrationOTP.objects.filter(email=email).order_by("-created_at").first()
-
-    if not otp_entry:
-        messages.error(request, "No OTP request found.")
-        return redirect("register")
-
     if request.method == "POST":
-        entered_otp = request.POST.get("otp", "").strip()
+        entered_otp = request.POST.get("otp")
 
-        if otp_entry.is_expired():
-            messages.error(request, "OTP expired. Please register again.")
-            otp_entry.delete()
-            request.session.pop("register_email", None)
-            return redirect("register")
-
-        if otp_entry.otp != entered_otp:
+        try:
+            otp_entry = RegistrationOTP.objects.get(email=email, otp=entered_otp)
+        except RegistrationOTP.DoesNotExist:
             messages.error(request, "Invalid OTP.")
             return redirect("verify_register_otp")
 
-        if User.objects.filter(username=otp_entry.username).exists():
-            messages.error(request, "Username already exists.")
-            otp_entry.delete()
-            request.session.pop("register_email", None)
-            return redirect("register")
+        if User.objects.filter(username=otp_entry.email).exists():
+            messages.warning(request, "User already exists. Please login.")
+            return redirect("login")
 
-        if User.objects.filter(email=otp_entry.email).exists():
-            messages.error(request, "Email already exists.")
-            otp_entry.delete()
-            request.session.pop("register_email", None)
-            return redirect("register")
-
-        user = User.objects.create(
-            username=otp_entry.username,
+        user = User.objects.create_user(
+            username=otp_entry.email,
             email=otp_entry.email,
-            first_name=otp_entry.first_name or "",
             password=otp_entry.password,
+            first_name=otp_entry.first_name
         )
 
-        Profile.objects.create(
+        profile = Profile.objects.create(
             user=user,
             role=otp_entry.role,
             phone=otp_entry.phone or "",
-            department=otp_entry.department if otp_entry.role == "doctor" else "",
+            department=otp_entry.department or "",
             is_approved=False if otp_entry.role == "doctor" else True
         )
 
-        request.session.pop("register_email", None)
         otp_entry.delete()
+        request.session.pop("register_email", None)
 
-        if otp_entry.role == "doctor":
-            messages.success(request, "Doctor registration successful. Please wait for admin approval.")
-        else:
-            messages.success(request, "Registration successful. Please login.")
+        if profile.role == "doctor" and not profile.is_approved:
+            return redirect("doctor_pending_approval")
 
+        messages.success(request, "Registration successful. Please login.")
         return redirect("login")
 
     return render(request, "verify_register_otp.html")
-
 
 
 def resend_register_otp_view(request):

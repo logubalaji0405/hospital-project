@@ -4,8 +4,9 @@ from .models import Profile, Appointment, ChatRoom, ChatMessage, Feedback
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'role', 'department', 'is_approved')
-
+    list_display = ('user', 'role', 'phone', 'department', 'is_approved')
+    list_filter = ('role', 'is_approved', 'department')
+    search_fields = ('user__username', 'user__email', 'department', 'phone')
 
 @admin.register(Appointment)
 class AppointmentAdmin(admin.ModelAdmin):

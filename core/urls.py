@@ -35,6 +35,6 @@ urlpatterns = [
 
     path('about/', views.about, name='about'),
     path('feedbacks/', views.feedback_list, name='feedback_list'),
-
+    path("doctor/pending-approval/", views.doctor_pending_approval, name="doctor_pending_approval"),
     path('run-reminders/', views.run_reminders, name='run_reminders'),
 ]
