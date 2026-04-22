@@ -93,11 +93,11 @@ def login_view(request):
 
             if profile:
                 if profile.role == "admin":
-                    return redirect("admin_dashboard")
+                    return redirect("home")
                 elif profile.role == "doctor":
-                    return redirect("doctor_dashboard")
+                    return redirect("home")
                 else:
-                    return redirect("patient_dashboard")
+                    return redirect("home")
 
             return redirect("home")
 
@@ -662,7 +662,7 @@ def verify_register_otp_view(request):
         request.session.pop("register_email", None)
 
         if profile.role == "doctor" and not profile.is_approved:
-            return redirect("doctor_pending_approval")
+            return redirect("doctor_pending")
 
         messages.success(request, "Registration successful. Please login.")
         return redirect("login")
