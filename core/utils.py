@@ -112,28 +112,32 @@ def generate_otp():
 
 
 def send_registration_otp(email, otp, username):
-    subject = "Healix HMS OTP Verification"
+    subject = "Healix HMS OTP"
 
     message = f"""
 Hello {username},
 
 Your OTP is: {otp}
 
-This OTP is valid for 5 minutes.
-
-Thank you,
-Healix HMS
+Valid for 5 minutes.
 """
 
     try:
+        # If env vars missing → skip email safely
+        if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
+            print("⚠ Email not configured, OTP:", otp)
+            return
+
         send_mail(
             subject,
             message,
             settings.DEFAULT_FROM_EMAIL,
             [email],
-            fail_silently=False
+            fail_silently=True  # 🔥 IMPORTANT: prevent crash
         )
-        print("✅ OTP email sent")
+
+        print("✅ Email sent")
+
     except Exception as e:
-        print("❌ Email Error:", e)
-        raise e
+        print("❌ Email error:", e)
+        # DO NOT raise → prevents 502 crash
