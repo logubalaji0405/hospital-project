@@ -16,6 +16,9 @@ import random
 from .utils import send_reminder_email
 from .utils import generate_otp, send_registration_otp
 from django.contrib.auth.hashers import make_password
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+
 def home(request):
     return render(request, 'home.html')
 
