@@ -111,17 +111,21 @@ def generate_otp():
 
 
 
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+from django.conf import settings
+
 def send_registration_otp(email, otp, username):
-    print("👉 FUNCTION CALLED, sending to:", email)
+    message = Mail(
+        from_email='your_verified_email@gmail.com',
+        to_emails=email,
+        subject='OTP Verification',
+        html_content=f"<h1>Your OTP is {otp}</h1>"
+    )
 
     try:
-        send_mail(
-            "OTP",
-            f"Your OTP is {otp}",
-            settings.DEFAULT_FROM_EMAIL,
-            [email],
-            fail_silently=False
-        )
-        print("✅ EMAIL SENT")
+        sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
+        sg.send(message)
+        print("✅ Email sent via SendGrid")
     except Exception as e:
-        print("❌ EMAIL ERROR:", e)
+        print("❌ SendGrid Error:", e)
