@@ -1,6 +1,9 @@
 from django.core.mail import send_mail
 from django.conf import settings
 import random
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+from django.conf import settings
 
 def send_booking_confirmation_email(appointment):
     patient_email = appointment.patient.email
@@ -109,24 +112,24 @@ def generate_otp():
     return str(random.randint(100000, 999999))
 
 
+
 def send_registration_otp(email, otp, username):
-    subject = "Healix HMS Registration OTP"
-    message = f"""
-Hello {username},
-
-Your OTP for Healix HMS account registration is: {otp}
-
-This OTP is valid for 5 minutes.
-
-If you did not request this, please ignore this email.
-
-Regards,
-Healix HMS
-"""
-    send_mail(
-        subject,
-        message,
-        settings.DEFAULT_FROM_EMAIL,
-        [email],
-        fail_silently=False
+    message = Mail(
+        from_email=settings.DEFAULT_FROM_EMAIL,   # use verified sender
+        to_emails=email,
+        subject='Healix HMS OTP',
+        html_content=f"""
+        <h3>Hello {username}</h3>
+        <p>Your OTP is:</p>
+        <h1>{otp}</h1>
+        <p>This OTP is valid for 5 minutes.</p>
+        """
     )
+
+    try:
+        sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
+        sg.send(message)
+        print("✅ OTP sent via SendGrid")
+    except Exception as e:
+        print("❌ SendGrid Error:", e)
+        raise e

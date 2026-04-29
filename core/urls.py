@@ -5,7 +5,7 @@ urlpatterns = [
     path('', views.home, name='home'),
     path('register/', views.register_view, name='register'),
     path('register/verify-otp/', views.verify_register_otp_view, name='verify_register_otp'),
-    # path('register/resend-otp/', views.resend_register_otp_view, name='resend_register_otp'),
+    path('register/resend-otp/', views.resend_register_otp_view, name='resend_register_otp'),
 
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
