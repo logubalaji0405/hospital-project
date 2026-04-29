@@ -627,60 +627,13 @@ def verify_register_otp_view(request):
     email = request.session.get("register_email")
 
     if not email:
-        messages.error(request, "Session expired. Please register again.")
-        return redirect("register")
-
-    if request.method == "POST":
-        entered_otp = request.POST.get("otp")
-
-        try:
-            otp_entry = RegistrationOTP.objects.get(email=email, otp=entered_otp)
-        except RegistrationOTP.DoesNotExist:
-            messages.error(request, "Invalid OTP.")
-            return redirect("verify_register_otp")
-
-        if User.objects.filter(username=otp_entry.username).exists():
-            messages.warning(request, "User already exists. Please login.")
-            return redirect("login")
-
-        user = User.objects.create_user(
-            username=otp_entry.username,
-            email=otp_entry.email,
-            password=otp_entry.password,
-            first_name=otp_entry.first_name
-        )
-
-        profile = Profile.objects.create(
-            user=user,
-            role=otp_entry.role,
-            phone=otp_entry.phone or "",
-            department=otp_entry.department or "",
-            is_approved=False if otp_entry.role == "doctor" else True
-        )
-
-        otp_entry.delete()
-        request.session.pop("register_email", None)
-
-        if profile.role == "doctor" and not profile.is_approved:
-            return redirect("doctor_pending")
-
-        messages.success(request, "Registration successful. Please login.")
-        return redirect("login")
-
-    return render(request, "verify_register_otp.html")
-
-
-def resend_register_otp_view(request):
-    email = request.session.get("register_email")
-
-    if not email:
-        messages.error(request, "Session expired. Please register again.")
+        messages.error(request, "Session expired.")
         return redirect("register")
 
     otp_entry = RegistrationOTP.objects.filter(email=email).order_by("-created_at").first()
 
     if not otp_entry:
-        messages.error(request, "No registration found.")
+        messages.error(request, "No OTP found.")
         return redirect("register")
 
     otp = generate_otp()
@@ -689,11 +642,34 @@ def resend_register_otp_view(request):
 
     try:
         send_registration_otp(email, otp, otp_entry.username)
-        messages.success(request, "New OTP sent successfully.")
+        messages.success(request, "OTP resent successfully.")
     except Exception as e:
-        messages.error(request, f"Failed to resend OTP: {e}")
+        print("OTP resend error:", e)
+        messages.warning(request, f"OTP: {otp}")  # fallback
 
     return redirect("verify_register_otp")
+
+
+def send_registration_otp(email, otp, username):
+    message = Mail(
+        from_email='your_verified_email@gmail.com',
+        to_emails=email,
+        subject='Healix HMS OTP',
+        html_content=f"""
+        <h3>Hello {username}</h3>
+        <p>Your OTP is:</p>
+        <h1>{otp}</h1>
+        <p>Valid for 5 minutes</p>
+        """
+    )
+
+    try:
+        sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
+        sg.send(message)
+        print("✅ OTP sent via SendGrid")
+    except Exception as e:
+        print("❌ SendGrid Error:", e)
+
 
 @login_required
 def reject_doctor(request, doctor_id):
