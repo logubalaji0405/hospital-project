@@ -65,7 +65,7 @@ def register_view(request):
         request.session["register_email"] = email
 
         try:
-            send_registration_otp(email, otp, first_name)
+            send_registration_otp(email, otp, username)
             messages.success(request, "OTP sent to your email.")
         except Exception as e:
             messages.error(request, f"Failed to send OTP: {e}")
