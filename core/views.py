@@ -60,7 +60,7 @@ def register_view(request):
             send_registration_otp(email, otp, username)
             messages.success(request, "OTP sent to your email")
         except Exception:
-            messages.error(request, "Failed to send OTP. Try again later")
+            messages.error(request, "Failed to send OTP")
             return redirect("register")
 
         return redirect("verify_register_otp")
@@ -91,6 +91,7 @@ def resend_register_otp_view(request):
 
     return redirect("verify_register_otp")
     
+        
 def login_view(request):
     if request.method == "POST":
         username = request.POST.get("username")
