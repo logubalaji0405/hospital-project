@@ -113,23 +113,24 @@ def generate_otp():
 
 
 
+
 def send_registration_otp(email, otp, username):
     message = Mail(
-        from_email=settings.DEFAULT_FROM_EMAIL,   # use verified sender
+        from_email=settings.DEFAULT_FROM_EMAIL,   # must be verified in SendGrid
         to_emails=email,
-        subject='Healix HMS OTP',
+        subject="Healix HMS - OTP Verification",
         html_content=f"""
-        <h3>Hello {username}</h3>
+        <h2>Hello {username}</h2>
         <p>Your OTP is:</p>
-        <h1>{otp}</h1>
+        <h1 style="color:blue;">{otp}</h1>
         <p>This OTP is valid for 5 minutes.</p>
         """
     )
 
     try:
         sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
-        sg.send(message)
-        print("✅ OTP sent via SendGrid")
+        response = sg.send(message)
+        print("✅ Email sent:", response.status_code)
     except Exception as e:
-        print("❌ SendGrid Error:", e)
+        print("❌ SendGrid Error:", str(e))
         raise e

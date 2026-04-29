@@ -25,6 +25,7 @@ from django.shortcuts import render
 def doctor_pending(request):
     return render(request, "doctor_pending.html")
 
+
 def register_view(request):
     if request.method == "POST":
         first_name = request.POST.get("first_name")
@@ -38,7 +39,7 @@ def register_view(request):
             return redirect("register")
 
         if User.objects.filter(username=username).exists():
-            messages.error(request, "Username exists")
+            messages.error(request, "Username already exists")
             return redirect("register")
 
         otp = generate_otp()
@@ -57,9 +58,10 @@ def register_view(request):
 
         try:
             send_registration_otp(email, otp, username)
-            messages.success(request, "OTP sent to email")
+            messages.success(request, "OTP sent to your email")
         except Exception:
-            messages.warning(request, f"OTP: {otp}")  # fallback
+            messages.error(request, "Failed to send OTP. Try again later")
+            return redirect("register")
 
         return redirect("verify_register_otp")
 
@@ -83,12 +85,12 @@ def resend_register_otp_view(request):
 
     try:
         send_registration_otp(email, otp, otp_entry.username)
-        messages.success(request, "OTP resent")
-    except:
-        messages.warning(request, f"OTP: {otp}")
+        messages.success(request, "OTP resent successfully")
+    except Exception:
+        messages.error(request, "Failed to resend OTP")
 
     return redirect("verify_register_otp")
-
+    
 def login_view(request):
     if request.method == "POST":
         username = request.POST.get("username")
@@ -664,7 +666,7 @@ def verify_register_otp_view(request):
         otp_entry.delete()
         request.session.pop("register_email", None)
 
-        messages.success(request, "Registration successful")
+        messages.success(request, "Account created successfully")
         return redirect("login")
 
     return render(request, "verify_register_otp.html")
