@@ -65,8 +65,8 @@ def register_view(request):
         request.session["register_email"] = email
 
         try:
-            print("OTP:", otp)
-            messages.success(request, f"Your OTP is {otp}")  # temporary
+            send_registration_otp(email, otp, username)
+            messages.success(request, "OTP sent to your email.")
         except Exception as e:
             messages.error(request, f"Failed to send OTP: {e}")
             return redirect("register")
@@ -568,61 +568,60 @@ def feedback_list(request):
     return render(request, 'feedback_list.html', context)
 
 
-# def run_reminders(request):
-#     secret_key = request.GET.get("key")
-
-#     if secret_key != "mysecret123":
-#         return HttpResponse("Unauthorized", status=403)
-
-#     now = timezone.localtime()
-
-#     appointments = Appointment.objects.filter(
-#         status='confirmed',
-#         reminder_sent=False,
-#         appointment_date__gte=now.date()
-#     ).select_related('patient', 'doctor')
-
-#     found = 0
-#     sent = 0
-
-#     for appointment in appointments:
-#         appointment_datetime = datetime.combine(
-#             appointment.appointment_date,
-#             appointment.appointment_time
-#         )
-
-#         appointment_datetime = timezone.make_aware(
-#             appointment_datetime,
-#             timezone.get_current_timezone()
-#         )
-
-#         minutes_left = (appointment_datetime - now).total_seconds() / 60
-
-#         print("Appointment ID:", appointment.id)
-#         print("Appointment time:", appointment_datetime)
-#         print("Current time:", now)
-#         print("Minutes left:", minutes_left)
-#         print("Status:", appointment.status)
-#         print("Reminder sent:", appointment.reminder_sent)
-#         print("Patient email:", appointment.patient.email)
-
-#         # 24 hours before reminder
-#         if 1435 <= minutes_left <= 1445:
-#             found += 1
-
-#             ok = send_reminder_email(appointment)
-
-#             if ok:
-#                 appointment.reminder_sent = True
-#                 appointment.save()
-#                 sent += 1
-#                 print(f"24-hour reminder sent for appointment #{appointment.id}")
-#             else:
-#                 print(f"Reminder failed for appointment #{appointment.id}")
-
-#     return HttpResponse(f"Matching appointments found: {found}, Reminders sent: {sent}")
 def run_reminders(request):
-    return HttpResponse("Disabled temporarily")
+    secret_key = request.GET.get("key")
+
+    if secret_key != "mysecret123":
+        return HttpResponse("Unauthorized", status=403)
+
+    now = timezone.localtime()
+
+    appointments = Appointment.objects.filter(
+        status='confirmed',
+        reminder_sent=False,
+        appointment_date__gte=now.date()
+    ).select_related('patient', 'doctor')
+
+    found = 0
+    sent = 0
+
+    for appointment in appointments:
+        appointment_datetime = datetime.combine(
+            appointment.appointment_date,
+            appointment.appointment_time
+        )
+
+        appointment_datetime = timezone.make_aware(
+            appointment_datetime,
+            timezone.get_current_timezone()
+        )
+
+        minutes_left = (appointment_datetime - now).total_seconds() / 60
+
+        print("Appointment ID:", appointment.id)
+        print("Appointment time:", appointment_datetime)
+        print("Current time:", now)
+        print("Minutes left:", minutes_left)
+        print("Status:", appointment.status)
+        print("Reminder sent:", appointment.reminder_sent)
+        print("Patient email:", appointment.patient.email)
+
+        # 24 hours before reminder
+        if 1435 <= minutes_left <= 1445:
+            found += 1
+
+            ok = send_reminder_email(appointment)
+
+            if ok:
+                appointment.reminder_sent = True
+                appointment.save()
+                sent += 1
+                print(f"24-hour reminder sent for appointment #{appointment.id}")
+            else:
+                print(f"Reminder failed for appointment #{appointment.id}")
+
+    return HttpResponse(f"Matching appointments found: {found}, Reminders sent: {sent}")
+
 
 def verify_register_otp_view(request):
     email = request.session.get("register_email")
