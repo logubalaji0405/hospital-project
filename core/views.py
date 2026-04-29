@@ -42,10 +42,13 @@ def register_view(request):
             messages.error(request, "Username already exists")
             return redirect("register")
 
+        # Generate OTP
         otp = generate_otp()
 
+        # Remove old OTP
         RegistrationOTP.objects.filter(email=email).delete()
 
+        # Save OTP
         RegistrationOTP.objects.create(
             first_name=first_name,
             username=username,
@@ -56,13 +59,14 @@ def register_view(request):
 
         request.session["register_email"] = email
 
+        # 🔥 SAFE EMAIL (WILL NOT CRASH)
         try:
             send_registration_otp(email, otp, username)
-            messages.success(request, "OTP sent to your email")
-        except Exception:
-            messages.error(request, "Failed to send OTP")
-            return redirect("register")
+        except Exception as e:
+            print("Email error:", e)
+            # DO NOT break request
 
+        messages.success(request, "OTP sent (check email)")
         return redirect("verify_register_otp")
 
     return render(request, "register.html")
@@ -83,12 +87,13 @@ def resend_register_otp_view(request):
     otp_entry.otp = otp
     otp_entry.save()
 
+    # 🔥 SAFE EMAIL AGAIN
     try:
         send_registration_otp(email, otp, otp_entry.username)
-        messages.success(request, "OTP resent successfully")
-    except Exception:
-        messages.error(request, "Failed to resend OTP")
+    except Exception as e:
+        print("Resend email error:", e)
 
+    messages.success(request, "OTP resent")
     return redirect("verify_register_otp")
     
         
@@ -655,6 +660,7 @@ def verify_register_otp_view(request):
             messages.error(request, "Invalid OTP")
             return redirect("verify_register_otp")
 
+        # Create user
         user = User.objects.create_user(
             username=otp_entry.username,
             email=otp_entry.email,

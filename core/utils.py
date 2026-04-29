@@ -123,9 +123,9 @@ Valid for 5 minutes.
 """
 
     try:
-        # If env vars missing → skip email safely
+        # If email not configured → skip safely
         if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
-            print("⚠ Email not configured, OTP:", otp)
+            print("⚠ Email not configured. OTP:", otp)
             return
 
         send_mail(
@@ -133,11 +133,11 @@ Valid for 5 minutes.
             message,
             settings.DEFAULT_FROM_EMAIL,
             [email],
-            fail_silently=True  # 🔥 IMPORTANT: prevent crash
+            fail_silently=True   # 🔥 CRITICAL: never crash request
         )
 
-        print("✅ Email sent")
+        print("✅ Email attempted")
 
     except Exception as e:
         print("❌ Email error:", e)
-        # DO NOT raise → prevents 502 crash
+        # DO NOT raise → prevents 502
