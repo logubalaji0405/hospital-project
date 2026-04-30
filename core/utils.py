@@ -9,53 +9,44 @@ def send_booking_confirmation_email(appointment):
     patient_email = appointment.patient.email
 
     if not patient_email:
-        print("No patient email found")
+        print("No email found")
         return False
 
-    subject = "✅ Appointment Confirmed | Healix Hospital"
+    message = Mail(
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to_emails=patient_email,
+        subject="Appointment Confirmed - Healix Hospital",
+        html_content=f"""
+        <h2>Healix Hospital</h2>
 
-    message = f"""
-Dear {appointment.patient.first_name or appointment.patient.username},
+        <p>Hello {appointment.patient.first_name},</p>
 
-🎉 Your appointment has been successfully confirmed!
+        <p>Your appointment has been confirmed.</p>
 
-━━━━━━━━━━━━━━━━━━━━━━━
-📋 APPOINTMENT DETAILS
-━━━━━━━━━━━━━━━━━━━━━━━
-👨‍⚕️ Doctor   : Dr. {appointment.doctor.first_name or appointment.doctor.username}
-📅 Date     : {appointment.appointment_date}
-⏰ Time     : {appointment.appointment_time}
-📝 Reason   : {appointment.reason}
+        <ul>
+            <li><b>Doctor:</b> Dr. {appointment.doctor.first_name}</li>
+            <li><b>Date:</b> {appointment.appointment_date}</li>
+            <li><b>Time:</b> {appointment.appointment_time}</li>
+        </ul>
 
-━━━━━━━━━━━━━━━━━━━━━━━
+        <p>Please arrive 10 minutes early.</p>
 
-⏳ Please arrive at least 10 minutes before your scheduled time.
-
-📌 Need help?
-• Reschedule or cancel your appointment anytime.
-• Contact us for any assistance.
-
-💙 Thank you for trusting Healix Hospital.
-We are committed to your care and well-being.
-
-Warm regards,  
-Healix Hospital Team
-"""
+        <hr>
+        <p>Healix Hospital</p>
+        """
+    )
 
     try:
-        send_mail(
-            subject,
-            message,
-            settings.DEFAULT_FROM_EMAIL,
-            [patient_email],
-            fail_silently=False,
-        )
-        print(f"Confirmation email sent to {patient_email}")
-        return True
-    except Exception as e:
-        print("Confirmation email error:", e)
-        return False
+        sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
+        response = sg.send(message)
 
+        print("SendGrid status:", response.status_code)
+
+        return response.status_code in (200, 202)
+
+    except Exception as e:
+        print("Email error:", e)
+        return False
 
 
 def send_reminder_email(appointment):
