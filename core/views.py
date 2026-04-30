@@ -642,36 +642,36 @@ def verify_register_otp_view(request):
     email = request.session.get("register_email")
 
     if not email:
-        messages.error(request, "Session expired")
         return redirect("register")
 
     if request.method == "POST":
         entered_otp = request.POST.get("otp")
 
         try:
-            otp_entry = RegistrationOTP.objects.get(email=email, otp=entered_otp)
+            otp_entry = RegistrationOTP.objects.get(email=email)
+
+            if otp_entry.otp == entered_otp:
+                user = User.objects.create_user(
+                    username=otp_entry.username,
+                    email=otp_entry.email,
+                    password=otp_entry.password,
+                    first_name=otp_entry.first_name
+                )
+
+                Profile.objects.create(user=user)
+
+                otp_entry.delete()
+
+                messages.success(request, "Account created successfully")
+                return redirect("login")
+
+            else:
+                messages.error(request, "Invalid OTP")
+
         except RegistrationOTP.DoesNotExist:
-            messages.error(request, "Invalid OTP")
-            return redirect("verify_register_otp")
-
-        # Create user
-        user = User.objects.create_user(
-            username=otp_entry.username,
-            email=otp_entry.email,
-            password=otp_entry.password,
-            first_name=otp_entry.first_name
-        )
-
-        Profile.objects.create(user=user)
-
-        otp_entry.delete()
-        request.session.pop("register_email", None)
-
-        messages.success(request, "Account created successfully")
-        return redirect("login")
+            messages.error(request, "OTP expired")
 
     return render(request, "verify_register_otp.html")
-
 
 @login_required
 def reject_doctor(request, doctor_id):

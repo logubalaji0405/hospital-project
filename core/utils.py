@@ -3,7 +3,7 @@ import random
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from django.conf import settings
-
+from django.urls import reverse
 
 def send_booking_confirmation_email(appointment):
     patient_email = appointment.patient.email
@@ -113,16 +113,43 @@ def generate_otp():
 
 
 def send_registration_otp(email, otp, username):
+    # ✅ Mobile-safe URL
+    verify_url = settings.SITE_URL + reverse("verify_register_otp")
+
+    html_content = f"""
+    <div style="font-family:Arial;padding:20px;">
+        <h2 style="color:#2563eb;">Healix Hospital</h2>
+
+        <p>Hello <b>{username}</b>,</p>
+
+        <p>Your OTP is:</p>
+
+        <h1 style="color:#2563eb;">{otp}</h1>
+
+        <p>This OTP is valid for 5 minutes.</p>
+
+        <p>Or click below to verify:</p>
+
+        <a href="{verify_url}"
+           style="background:#2563eb;color:white;
+           padding:10px 20px;
+           text-decoration:none;
+           border-radius:5px;">
+           Verify OTP
+        </a>
+
+        <hr>
+        <p style="font-size:12px;color:gray;">
+        Healix Hospital • Secure System
+        </p>
+    </div>
+    """
+
     message = Mail(
-        from_email=settings.DEFAULT_FROM_EMAIL,   # MUST be verified in SendGrid
+        from_email=settings.DEFAULT_FROM_EMAIL,
         to_emails=email,
         subject="Healix HMS OTP Verification",
-        html_content=f"""
-        <h2>Hello {username}</h2>
-        <p>Your OTP is:</p>
-        <h1 style="color:#2563eb;">{otp}</h1>
-        <p>This OTP is valid for 5 minutes.</p>
-        """
+        html_content=html_content
     )
 
     try:
@@ -130,10 +157,5 @@ def send_registration_otp(email, otp, username):
         response = sg.send(message)
         print("SendGrid status:", response.status_code)
 
-        # 202 = success
-        if response.status_code not in (200, 202):
-            print("SendGrid failed:", response.status_code, response.body)
-
     except Exception as e:
         print("SendGrid error:", str(e))
-        # DO NOT raise → avoids 502
