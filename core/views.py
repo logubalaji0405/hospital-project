@@ -42,13 +42,9 @@ def register_view(request):
             messages.error(request, "Username already exists")
             return redirect("register")
 
-        # Generate OTP
         otp = generate_otp()
 
-        # Remove old OTP
         RegistrationOTP.objects.filter(email=email).delete()
-
-        # Save OTP
         RegistrationOTP.objects.create(
             first_name=first_name,
             username=username,
@@ -59,18 +55,16 @@ def register_view(request):
 
         request.session["register_email"] = email
 
-        # 🔥 SAFE EMAIL (WILL NOT CRASH)
+        # Safe (won’t crash request)
         try:
             send_registration_otp(email, otp, username)
         except Exception as e:
-            print("Email error:", e)
-            # DO NOT break request
+            print("Email call error:", e)
 
-        messages.success(request, "OTP sent (check email)")
+        messages.success(request, "OTP sent to your email")
         return redirect("verify_register_otp")
 
     return render(request, "register.html")
-
 
 def resend_register_otp_view(request):
     email = request.session.get("register_email")
