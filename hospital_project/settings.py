@@ -106,6 +106,6 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
 
 # MUST be a VERIFIED sender in SendGrid
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "balabalajibala512@gmail.com")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@healix.com")
 
 EMAIL_TIMEOUT = 5
