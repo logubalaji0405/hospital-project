@@ -56,47 +56,45 @@ def send_reminder_email(appointment):
         print("No patient email found for reminder")
         return False
 
-    subject = "⏰ Reminder: Upcoming Appointment | Healix Hospital"
+    message = Mail(
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to_emails=patient_email,
+        subject="⏰ Appointment Reminder | Healix Hospital",
+        html_content=f"""
+        <div style="font-family:Arial;padding:20px;">
+            <h2 style="color:#2563eb;">Healix Hospital</h2>
 
-    message = f"""
-Hello {appointment.patient.first_name or appointment.patient.username},
+            <p>Hello <b>{appointment.patient.first_name}</b>,</p>
 
-🔔 This is a reminder for your upcoming appointment.
+            <p>This is a reminder for your upcoming appointment.</p>
 
-━━━━━━━━━━━━━━━━━━━━━━━
-📋 APPOINTMENT DETAILS
-━━━━━━━━━━━━━━━━━━━━━━━
-👨‍⚕️ Doctor   : Dr. {appointment.doctor.first_name or appointment.doctor.username}
-📅 Date     : {appointment.appointment_date}
-⏰ Time     : {appointment.appointment_time}
-📝 Reason   : {appointment.reason}
+            <ul>
+                <li><b>Doctor:</b> Dr. {appointment.doctor.first_name}</li>
+                <li><b>Date:</b> {appointment.appointment_date}</li>
+                <li><b>Time:</b> {appointment.appointment_time}</li>
+            </ul>
 
-━━━━━━━━━━━━━━━━━━━━━━━
+            <p>Please arrive 10 minutes early.</p>
 
-📌 Please ensure you arrive on time.
+            <hr>
+            <p style="font-size:12px;color:gray;">
+            Healix Hospital • Appointment Reminder System
+            </p>
+        </div>
+        """
+    )
 
-⚠️ If you are unable to attend:
-• Kindly reschedule or cancel in advance.
-
-💙 We look forward to serving you and ensuring your health.
-
-Best regards,  
-Healix Hospital Team
-"""
     try:
-        send_mail(
-            subject,
-            message,
-            settings.DEFAULT_FROM_EMAIL,
-            [patient_email],
-            fail_silently=False,
-        )
-        print(f"Reminder email sent to {patient_email}")
-        return True
+        sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
+        response = sg.send(message)
+
+        print("Reminder status:", response.status_code)
+
+        return response.status_code in (200, 202)
+
     except Exception as e:
         print("Reminder email error:", e)
-        return False
-    
+        return False    
 
 
 def generate_otp():
