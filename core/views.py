@@ -588,14 +588,14 @@ def run_reminders(request):
     key = request.GET.get("key")
 
     if key != "hms_secure_key_123":
-        return HttpResponse("Unauthorized", status=403)
+        return JsonResponse({"error": "unauthorized"}, status=403)
 
     now = timezone.localtime()
 
     appointments = Appointment.objects.filter(
         status='confirmed',
         reminder_sent=False,
-        appointment_date__gte=now.date()
+        appointment_date=now.date()
     )
 
     sent = 0
@@ -613,16 +613,13 @@ def run_reminders(request):
 
         minutes_left = (appointment_time - now).total_seconds() / 60
 
-        print("Checking:", a.id, minutes_left)
-
-        # 🔥 FIXED LOGIC (VERY IMPORTANT)
-        if 0 < minutes_left <= 30:
+        if 0 < minutes_left <= 10:
             if send_reminder_email(a):
                 a.reminder_sent = True
                 a.save()
                 sent += 1
 
-    return HttpResponse(f"Reminders sent: {sent}")
+    return JsonResponse({"sent": sent})
 
 def verify_register_otp_view(request):
     email = request.session.get("register_email")
