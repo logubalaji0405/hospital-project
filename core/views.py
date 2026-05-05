@@ -584,6 +584,7 @@ def feedback_list(request):
 
 
 
+
 def run_reminders(request):
     key = request.GET.get("key")
 
@@ -619,7 +620,8 @@ def run_reminders(request):
                 a.save()
                 sent += 1
 
-    return JsonResponse({"sent": sent})
+    return JsonResponse({"status": "ok", "sent": sent})
+
 
 def verify_register_otp_view(request):
     email = request.session.get("register_email")
