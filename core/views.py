@@ -8,7 +8,7 @@ from django.views.decorators.http import require_GET, require_POST
 from django.http import JsonResponse, HttpResponseForbidden
 from django.db.models import Avg, Count, Q
 from .models import Profile, Appointment, ChatMessage, ChatRoom,RegistrationOTP, Feedback,Branch
-from .utils import send_booking_confirmation_email
+from .utils import send_in_background,send_booking_confirmation_email
 from datetime import datetime
 from django.http import HttpResponse
 from django.utils import timezone
@@ -57,7 +57,7 @@ def register_view(request):
 
         # Safe (won’t crash request)
         try:
-            send_registration_otp(email, otp, username)
+            send_in_background(send_registration_otp, email, otp, username)
         except Exception as e:
             print("Email call error:", e)
 
