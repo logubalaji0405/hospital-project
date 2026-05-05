@@ -35,6 +35,24 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'hospital_project.urls'
+
+# ✅ FIXED TEMPLATES (IMPORTANT)
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [BASE_DIR / 'templates'],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
 WSGI_APPLICATION = 'hospital_project.wsgi.application'
 
 # DATABASE
@@ -52,26 +70,40 @@ else:
         }
     }
 
+AUTH_PASSWORD_VALIDATORS = []
+
+LANGUAGE_CODE = 'en-us'
+TIME_ZONE = 'Asia/Kolkata'
+USE_TZ = True
+USE_I18N = True
+
 # STATIC
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# TIME
-TIME_ZONE = 'Asia/Kolkata'
-USE_TZ = True
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
-# 🔥 GMAIL SMTP (IMPORTANT)
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# SECURITY
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
+# ✅ GMAIL SMTP (FREE)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")  # App password
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')   # your gmail
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # app password
 
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-EMAIL_TIMEOUT = 20
 
-# SITE URL
+EMAIL_TIMEOUT = 10
+
+# SITE URL (for OTP link)
 SITE_URL = "https://hospital-project-etq9.onrender.com"

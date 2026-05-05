@@ -20,9 +20,6 @@ class Command(BaseCommand):
             appointment_date=now.date()
         )
 
-        found = 0
-        sent = 0
-
         for a in appointments:
             appointment_time = datetime.combine(
                 a.appointment_date,
@@ -36,25 +33,15 @@ class Command(BaseCommand):
 
             minutes_left = (appointment_time - now).total_seconds() / 60
 
-            print(f"\n📌 Appointment ID: {a.id}")
-            print("Time:", appointment_time)
-            print("Minutes left:", minutes_left)
-            print("Status:", a.status)
-            print("Reminder sent:", a.reminder_sent)
+            print(f"Checking Appointment {a.id} → {minutes_left} mins left")
 
-            # ✅ MAIN CONDITION
+            # ✅ send before 5 mins
             if 0 < minutes_left <= 5:
-                found += 1
-
                 ok = send_reminder_email(a)
 
                 if ok:
                     a.reminder_sent = True
                     a.save()
-                    sent += 1
-                    print("✅ Reminder sent successfully")
+                    print("✅ Reminder sent")
                 else:
                     print("❌ Failed to send")
-
-        print("\n🔍 Matching:", found)
-        print("📧 Sent:", sent)
