@@ -586,7 +586,7 @@ def feedback_list(request):
 def run_reminders(request):
     secret_key = request.GET.get("key")
 
-    if secret_key != "mysecret123":
+    if secret_key != "hms_secure_key_123":
         return HttpResponse("Unauthorized", status=403)
 
     now = timezone.localtime()
