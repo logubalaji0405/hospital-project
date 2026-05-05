@@ -1,35 +1,29 @@
-import random
+from django.core.mail import send_mail
 from django.conf import settings
 from django.urls import reverse
-
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
+import random
 
 
-# OTP
+# OTP GENERATE
 def generate_otp():
     return str(random.randint(100000, 999999))
 
 
-# SEND EMAIL FUNCTION (COMMON)
-def send_email(to_email, subject, html_content):
+# COMMON EMAIL FUNCTION (IMPORTANT)
+def send_email(subject, message, to_email):
     try:
-        message = Mail(
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            to_emails=to_email,
-            subject=subject,
-            html_content=html_content
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [to_email],
+            fail_silently=False
         )
-
-        sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
-        response = sg.send(message)
-
-        print("✅ SendGrid status:", response.status_code)
-
-        return response.status_code in (200, 202)
+        print("✅ EMAIL SENT")
+        return True
 
     except Exception as e:
-        print("❌ SendGrid error:", str(e))
+        print("❌ EMAIL ERROR:", e)
         return False
 
 
@@ -37,46 +31,76 @@ def send_email(to_email, subject, html_content):
 def send_registration_otp(email, otp, username):
     verify_url = settings.SITE_URL + reverse("verify_register_otp")
 
-    html = f"""
-    <h2>Healix Hospital</h2>
+    subject = "Your Healix OTP Code"
 
-    <p>Hello <b>{username}</b></p>
+    message = f"""
+Hello {username},
 
-    <p>Your OTP:</p>
-    <h1>{otp}</h1>
+Your verification code is: {otp}
 
-    <p>Click below:</p>
-    <a href="{verify_url}">Verify OTP</a>
-    """
+This code is valid for 5 minutes.
 
-    return send_email(email, "OTP Verification", html)
+Verify here:
+{verify_url}
+
+If you did not request this, ignore this email.
+
+Regards,
+Healix Hospital Team
+"""
+
+    return send_email(subject, message, email)
 
 
-# BOOKING EMAIL
+# BOOKING CONFIRMATION
 def send_booking_confirmation_email(appointment):
     email = appointment.patient.email
 
-    html = f"""
-    <h2>Appointment Confirmed</h2>
+    if not email:
+        return False
 
-    <p>Doctor: {appointment.doctor.first_name}</p>
-    <p>Date: {appointment.appointment_date}</p>
-    <p>Time: {appointment.appointment_time}</p>
-    """
+    subject = "Appointment Confirmed - Healix Hospital"
 
-    return send_email(email, "Appointment Confirmed", html)
+    message = f"""
+Hello {appointment.patient.first_name},
+
+Your appointment has been successfully confirmed.
+
+Doctor: Dr. {appointment.doctor.first_name}
+Date: {appointment.appointment_date}
+Time: {appointment.appointment_time}
+
+Please arrive 10 minutes early.
+
+Regards,
+Healix Hospital Team
+"""
+
+    return send_email(subject, message, email)
 
 
 # REMINDER EMAIL
 def send_reminder_email(appointment):
     email = appointment.patient.email
 
-    html = f"""
-    <h2>Reminder</h2>
+    if not email:
+        return False
 
-    <p>Doctor: {appointment.doctor.first_name}</p>
-    <p>Date: {appointment.appointment_date}</p>
-    <p>Time: {appointment.appointment_time}</p>
-    """
+    subject = "Appointment Reminder - Healix Hospital"
 
-    return send_email(email, "Appointment Reminder", html)
+    message = f"""
+Hello {appointment.patient.first_name},
+
+This is a reminder for your upcoming appointment.
+
+Doctor: Dr. {appointment.doctor.first_name}
+Date: {appointment.appointment_date}
+Time: {appointment.appointment_time}
+
+Please be on time.
+
+Regards,
+Healix Hospital Team
+"""
+
+    return send_email(subject, message, email)

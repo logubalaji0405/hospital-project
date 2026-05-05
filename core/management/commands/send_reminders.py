@@ -33,15 +33,19 @@ class Command(BaseCommand):
 
             minutes_left = (appointment_time - now).total_seconds() / 60
 
-            print(f"Checking Appointment {a.id} → {minutes_left} mins left")
+            print(f"\n📌 Appointment ID: {a.id}")
+            print("Minutes left:", minutes_left)
 
-            # ✅ send before 5 mins
-            if 0 < minutes_left <= 5:
+            # ✅ send before 10 mins (better than 5)
+            if 0 < minutes_left <= 10:
+                print("🚀 Sending reminder...")
+
                 ok = send_reminder_email(a)
 
                 if ok:
                     a.reminder_sent = True
                     a.save()
                     print("✅ Reminder sent")
+
                 else:
                     print("❌ Failed to send")
