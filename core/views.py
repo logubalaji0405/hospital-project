@@ -583,10 +583,11 @@ def feedback_list(request):
     return render(request, 'feedback_list.html', context)
 
 
-def run_reminders(request):
-    secret_key = request.GET.get("key")
 
-    if secret_key != "hms_secure_key_123":
+def run_reminders(request):
+    key = request.GET.get("key")
+
+    if key != "hms_secure_key_123":
         return HttpResponse("Unauthorized", status=403)
 
     now = timezone.localtime()
@@ -595,48 +596,33 @@ def run_reminders(request):
         status='confirmed',
         reminder_sent=False,
         appointment_date__gte=now.date()
-    ).select_related('patient', 'doctor')
+    )
 
-    found = 0
     sent = 0
 
-    for appointment in appointments:
-        appointment_datetime = datetime.combine(
-            appointment.appointment_date,
-            appointment.appointment_time
+    for a in appointments:
+        appointment_time = datetime.combine(
+            a.appointment_date,
+            a.appointment_time
         )
 
-        appointment_datetime = timezone.make_aware(
-            appointment_datetime,
+        appointment_time = timezone.make_aware(
+            appointment_time,
             timezone.get_current_timezone()
         )
 
-        minutes_left = (appointment_datetime - now).total_seconds() / 60
+        minutes_left = (appointment_time - now).total_seconds() / 60
 
-        print("Appointment ID:", appointment.id)
-        print("Appointment time:", appointment_datetime)
-        print("Current time:", now)
-        print("Minutes left:", minutes_left)
-        print("Status:", appointment.status)
-        print("Reminder sent:", appointment.reminder_sent)
-        print("Patient email:", appointment.patient.email)
+        print("Checking:", a.id, minutes_left)
 
-        # 24 hours before reminder
-        if 1435 <= minutes_left <= 1445:
-            found += 1
-
-            ok = send_reminder_email(appointment)
-
-            if ok:
-                appointment.reminder_sent = True
-                appointment.save()
+        # 🔥 FIXED LOGIC (VERY IMPORTANT)
+        if 0 < minutes_left <= 30:
+            if send_reminder_email(a):
+                a.reminder_sent = True
+                a.save()
                 sent += 1
-                print(f"24-hour reminder sent for appointment #{appointment.id}")
-            else:
-                print(f"Reminder failed for appointment #{appointment.id}")
 
-    return HttpResponse(f"Matching appointments found: {found}, Reminders sent: {sent}")
-
+    return HttpResponse(f"Reminders sent: {sent}")
 
 def verify_register_otp_view(request):
     email = request.session.get("register_email")
