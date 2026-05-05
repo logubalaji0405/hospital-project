@@ -36,6 +36,6 @@ urlpatterns = [
     path('about/', views.about, name='about'),
     path('feedbacks/', views.feedback_list, name='feedback_list'),
     path("doctor/pending-approval/", views.doctor_pending, name="doctor_pending"),
-    # urls.py
+    
     path("run-reminders/", views.run_reminders),
 ]
