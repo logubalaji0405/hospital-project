@@ -8,14 +8,14 @@ from django.views.decorators.http import require_GET, require_POST
 from django.http import JsonResponse, HttpResponseForbidden
 from django.db.models import Avg, Count, Q
 from .models import Profile, Appointment, ChatMessage, ChatRoom,RegistrationOTP, Feedback,Branch
-from .utils import send_in_background,send_booking_confirmation_email
+from .utils import generate_otp,send_registration_otp,send_booking_confirmation_email,send_reminder_email
 from datetime import datetime
 from django.http import HttpResponse
 from django.utils import timezone
-import random
 from .utils import send_reminder_email
 from .utils import generate_otp, send_registration_otp
 from django.contrib.auth.hashers import make_password
+import threading
 
 def home(request):
     return render(request, 'home.html')
@@ -55,16 +55,14 @@ def register_view(request):
 
         request.session["register_email"] = email
 
-        # Safe (won’t crash request)
-        try:
-            send_in_background(send_registration_otp, email, otp, username)
-        except Exception as e:
-            print("Email call error:", e)
+        # ✅ SAFE BACKGROUND EMAIL
+        send_in_background(send_registration_otp, email, otp, username)
 
         messages.success(request, "OTP sent to your email")
         return redirect("verify_register_otp")
 
     return render(request, "register.html")
+
 
 def resend_register_otp_view(request):
     email = request.session.get("register_email")
@@ -81,45 +79,45 @@ def resend_register_otp_view(request):
     otp_entry.otp = otp
     otp_entry.save()
 
-    # 🔥 SAFE EMAIL AGAIN
-    try:
-        send_registration_otp(email, otp, otp_entry.username)
-    except Exception as e:
-        print("Resend email error:", e)
+    send_in_background(send_registration_otp, email, otp, otp_entry.username)
 
     messages.success(request, "OTP resent")
     return redirect("verify_register_otp")
     
         
-def login_view(request):
+def verify_register_otp_view(request):
+    email = request.session.get("register_email")
+
+    if not email:
+        return redirect("register")
+
     if request.method == "POST":
-        username = request.POST.get("username")
-        password = request.POST.get("password")
+        entered_otp = request.POST.get("otp")
 
-        user = authenticate(request, username=username, password=password)
+        try:
+            otp_entry = RegistrationOTP.objects.get(email=email)
 
-        if user is not None:
-            profile = getattr(user, "profile", None)
+            if otp_entry.otp == entered_otp:
+                user = User.objects.create_user(
+                    username=otp_entry.username,
+                    email=otp_entry.email,
+                    password=otp_entry.password,
+                    first_name=otp_entry.first_name
+                )
 
-            if profile and profile.role == "doctor" and not profile.is_approved:
-                return render(request, "doctor_pending_approval.html")
+                Profile.objects.create(user=user)
+                otp_entry.delete()
 
-            login(request, user)
+                messages.success(request, "Account created successfully")
+                return redirect("login")
 
-            if profile:
-                if profile.role == "admin":
-                    return redirect("home")
-                elif profile.role == "doctor":
-                    return redirect("home")
-                else:
-                    return redirect("home")
+            else:
+                messages.error(request, "Invalid OTP")
 
-            return redirect("home")
+        except RegistrationOTP.DoesNotExist:
+            messages.error(request, "OTP expired")
 
-        messages.error(request, "Invalid username or password")
-
-    return render(request, "login.html")
-
+    return render(request, "verify_register_otp.html")
 
 @login_required
 def logout_view(request):
@@ -281,43 +279,31 @@ def admin_dashboard(request):
 
     
 
+
+@login_required
 def book_appointment(request):
     doctors = User.objects.filter(profile__role='doctor')
     branches = Branch.objects.filter(is_active=True)
-    selected_branch = request.GET.get('branch', '')
 
-    if request.method == 'POST':
-        doctor_id = request.POST.get('doctor')
-        branch_id = request.POST.get('branch')
-        appointment_date = request.POST.get('appointment_date')
-        appointment_time = request.POST.get('appointment_time')
-        reason = request.POST.get('reason')
-
-        if not doctor_id or not branch_id or not appointment_date or not appointment_time or not reason:
-            messages.error(request, "Please fill all fields.")
-            return redirect('book_appointment')
-
-        doctor = User.objects.get(id=doctor_id)
-        branch = Branch.objects.get(id=branch_id)
-
-        Appointment.objects.create(
+    if request.method == "POST":
+        appointment = Appointment.objects.create(
             patient=request.user,
-            doctor=doctor,
-            branch=branch,
-            appointment_date=appointment_date,
-            appointment_time=appointment_time,
-            reason=reason,
+            doctor=User.objects.get(id=request.POST.get("doctor")),
+            branch=Branch.objects.get(id=request.POST.get("branch")),
+            appointment_date=request.POST.get("appointment_date"),
+            appointment_time=request.POST.get("appointment_time"),
+            reason=request.POST.get("reason"),
             status='pending'
         )
 
-        messages.success(request, "Appointment booked successfully.")
-        return redirect('booking_history')
+        messages.success(request, "Appointment booked")
+        return redirect("booking_history")
 
-    return render(request, 'book_appointment.html', {
-        'doctors': doctors,
-        'branches': branches,
-        'selected_branch': selected_branch,
+    return render(request, "book_appointment.html", {
+        "doctors": doctors,
+        "branches": branches
     })
+
 
 @login_required
 def booking_history(request):
@@ -329,32 +315,17 @@ def booking_history(request):
 
 @login_required
 def confirm_booking(request, appointment_id):
-    profile = get_object_or_404(Profile, user=request.user)
+    appointment = get_object_or_404(Appointment, id=appointment_id)
 
-    if profile.role != 'doctor':
-        return redirect('home')
-
-    appointment = get_object_or_404(
-        Appointment,
-        id=appointment_id,
-        doctor=request.user
-    )
-
-    appointment.status = 'confirmed'
+    appointment.status = "confirmed"
     appointment.reminder_sent = False
     appointment.save()
 
-    print("👉 Confirm clicked")
-    print("👉 Patient email:", appointment.patient.email)
+    # ✅ SAFE EMAIL (NO CRASH)
+    send_in_background(send_booking_confirmation_email, appointment)
 
-    email_ok = send_booking_confirmation_email(appointment)
-
-    if email_ok:
-        messages.success(request, "✅ Appointment confirmed & email sent")
-    else:
-        messages.warning(request, "⚠️ Appointment confirmed but email failed")
-
-    return redirect('doctor_dashboard')
+    messages.success(request, "Appointment confirmed")
+    return redirect("doctor_dashboard")
     
 
 @login_required
@@ -644,7 +615,6 @@ def verify_register_otp_view(request):
                 )
 
                 Profile.objects.create(user=user)
-
                 otp_entry.delete()
 
                 messages.success(request, "Account created successfully")
@@ -670,3 +640,13 @@ def reject_doctor(request, doctor_id):
 
     messages.success(request, f"{username} rejected and removed successfully.")
     return redirect('admin_dashboard')
+
+
+def send_in_background(func, *args):
+    def wrapper():
+        try:
+            func(*args)
+        except Exception as e:
+            print("❌ Background email error:", e)
+
+    threading.Thread(target=wrapper).start()
