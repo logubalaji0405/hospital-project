@@ -1,83 +1,149 @@
 import random
+import time
 from django.conf import settings
+from django.core.mail import EmailMultiAlternatives
 from django.urls import reverse
 
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
+
+# 🔁 SAFE SEND (fix Render network issue)
+def safe_send_email(msg):
+    for i in range(3):
+        try:
+            msg.send()
+            print("✅ Email sent")
+            return True
+        except Exception as e:
+            print(f"Retry {i+1}:", e)
+            time.sleep(5)
+    return False
 
 
-# COMMON SEND FUNCTION
-def send_email(to_email, subject, html):
-    try:
-        message = Mail(
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            to_emails=to_email,
-            subject=subject,
-            html_content=html
-        )
+# 🎯 COMMON EMAIL BUILDER (ANTI-SPAM)
+def build_email(subject, text_content, html_content, to_email):
+    msg = EmailMultiAlternatives(
+        subject,
+        text_content,
+        settings.DEFAULT_FROM_EMAIL,
+        [to_email]
+    )
 
-        sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
-        response = sg.send(message)
+    msg.attach_alternative(html_content, "text/html")
 
-        print("✅ SendGrid status:", response.status_code)
+    msg.extra_headers = {
+        "Reply-To": settings.DEFAULT_FROM_EMAIL,
+        "X-Mailer": "Healix HMS",
+    }
 
-        return response.status_code in (200, 202)
-
-    except Exception as e:
-        print("❌ SendGrid error:", str(e))
-        return False
+    return msg
 
 
-# OTP
+# 🔐 OTP GENERATOR
 def generate_otp():
     return str(random.randint(100000, 999999))
 
 
-# OTP EMAIL
+# 📩 OTP EMAIL
 def send_registration_otp(email, otp, username):
     verify_url = settings.SITE_URL + reverse("verify_register_otp")
 
-    html = f"""
-    <h2>Healix Hospital</h2>
+    subject = "Your Healix OTP (Valid 5 mins)"
 
-    <p>Hello <b>{username}</b></p>
+    text_content = f"""
+Hello {username},
 
-    <p>Your OTP:</p>
-    <h1>{otp}</h1>
+Your OTP is: {otp}
 
-    <p>This code is valid for 5 minutes.</p>
+Verify here:
+{verify_url}
 
-    <a href="{verify_url}">Verify OTP</a>
-    """
+Healix Hospital
+"""
 
-    return send_email(email, "OTP Verification", html)
+    html_content = f"""
+<h2>Healix Hospital</h2>
+<p>Hello <b>{username}</b>,</p>
+<p>Your OTP is:</p>
+<h1>{otp}</h1>
+
+<p><a href="{verify_url}">Verify Now</a></p>
+
+<hr>
+<p>Healix Hospital</p>
+"""
+
+    msg = build_email(subject, text_content, html_content, email)
+    return safe_send_email(msg)
 
 
-# BOOKING EMAIL
+# 📅 BOOKING EMAIL
 def send_booking_confirmation_email(appointment):
     email = appointment.patient.email
 
-    html = f"""
-    <h2>Appointment Confirmed</h2>
+    subject = "Appointment Confirmed - Healix Hospital"
 
-    <p>Doctor: {appointment.doctor.first_name}</p>
-    <p>Date: {appointment.appointment_date}</p>
-    <p>Time: {appointment.appointment_time}</p>
-    """
+    text_content = f"""
+Hello {appointment.patient.first_name},
 
-    return send_email(email, "Appointment Confirmed", html)
+Your appointment is confirmed.
+
+Doctor: Dr. {appointment.doctor.first_name}
+Date: {appointment.appointment_date}
+Time: {appointment.appointment_time}
+
+Healix Hospital
+"""
+
+    html_content = f"""
+<h2>Healix Hospital</h2>
+<p>Hello <b>{appointment.patient.first_name}</b>,</p>
+
+<p>Your appointment is confirmed.</p>
+
+<ul>
+<li><b>Doctor:</b> Dr. {appointment.doctor.first_name}</li>
+<li><b>Date:</b> {appointment.appointment_date}</li>
+<li><b>Time:</b> {appointment.appointment_time}</li>
+</ul>
+
+<hr>
+<p>Healix Hospital</p>
+"""
+
+    msg = build_email(subject, text_content, html_content, email)
+    return safe_send_email(msg)
 
 
-# REMINDER EMAIL
+# ⏰ REMINDER EMAIL
 def send_reminder_email(appointment):
     email = appointment.patient.email
 
-    html = f"""
-    <h2>Appointment Reminder</h2>
+    subject = "Reminder: Your Appointment Today"
 
-    <p>Doctor: {appointment.doctor.first_name}</p>
-    <p>Date: {appointment.appointment_date}</p>
-    <p>Time: {appointment.appointment_time}</p>
-    """
+    text_content = f"""
+Hello {appointment.patient.first_name},
 
-    return send_email(email, "Appointment Reminder", html)
+Reminder for your appointment:
+
+Doctor: Dr. {appointment.doctor.first_name}
+Time: {appointment.appointment_time}
+
+Healix Hospital
+"""
+
+    html_content = f"""
+<h2>Healix Hospital</h2>
+<p>Hello <b>{appointment.patient.first_name}</b>,</p>
+
+<p>This is your appointment reminder.</p>
+
+<ul>
+<li><b>Doctor:</b> Dr. {appointment.doctor.first_name}</li>
+<li><b>Time:</b> {appointment.appointment_time}</li>
+</ul>
+
+<hr>
+<p>Healix Hospital</p>
+"""
+
+    msg = build_email(subject, text_content, html_content, email)
+    return safe_send_email(msg)
