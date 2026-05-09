@@ -11,12 +11,12 @@ import random
 def send_email(subject, html_content, to_email):
     try:
         message = Mail(
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            to_emails=to_email,
-            subject=subject,
-            html_content=html_content
-        )
-
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to_emails=to_email,
+        subject=subject,
+        html_content=html_content,
+        plain_text_content="Healix Hospital verification email"
+)
         sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
 
         response = sg.send(message)
@@ -42,46 +42,64 @@ def generate_otp():
 # ==========================================
 def send_registration_otp(email, otp, username):
 
-    verify_url = settings.SITE_URL + reverse("verify_register_otp")
-
     html = f"""
-    <div style="font-family:Arial;padding:20px;">
-        <h2 style="color:#2563eb;">Healix Hospital</h2>
+    <html>
+    <body style="font-family: Arial; background:#f4f4f4; padding:20px;">
 
-        <p>Hello <b>{username}</b>,</p>
+        <div style="
+            max-width:600px;
+            margin:auto;
+            background:white;
+            padding:30px;
+            border-radius:10px;
+        ">
 
-        <p>Your OTP is:</p>
+            <h2 style="color:#0d6efd;">
+                Healix Hospital
+            </h2>
 
-        <h1 style="color:#2563eb;">{otp}</h1>
+            <p>Hello {username},</p>
 
-        <p>This OTP is valid for 5 minutes.</p>
+            <p>
+                Thank you for registering with Healix Hospital.
+            </p>
 
-        <p>
-            <a href="{verify_url}"
-               style="
-               background:#2563eb;
-               color:white;
-               padding:10px 20px;
-               text-decoration:none;
-               border-radius:5px;">
-               Verify OTP
-            </a>
-        </p>
+            <p>
+                Your verification code is:
+            </p>
 
-        <hr>
+            <h1 style="
+                background:#0d6efd;
+                color:white;
+                padding:15px;
+                border-radius:8px;
+                text-align:center;
+                letter-spacing:5px;
+            ">
+                {otp}
+            </h1>
 
-        <p style="font-size:12px;color:gray;">
-            Healix Hospital Secure Verification
-        </p>
-    </div>
+            <p>
+                This OTP will expire in 10 minutes.
+            </p>
+
+            <hr>
+
+            <p style="font-size:12px;color:gray;">
+                Healix Hospital Management System
+            </p>
+
+        </div>
+
+    </body>
+    </html>
     """
 
     return send_email(
-        "Healix HMS OTP Verification",
+        "Healix Hospital OTP Verification",
         html,
         email
     )
-
 
 # ==========================================
 # BOOKING CONFIRMATION EMAIL
