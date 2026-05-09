@@ -88,100 +88,104 @@ def send_registration_otp(email, otp, username):
 # ==========================================
 def send_booking_confirmation_email(appointment):
 
-    patient_email = appointment.patient.email
+    try:
 
-    if not patient_email:
-        return False
+        email = appointment.patient.email
 
-    html = f"""
-    <div style="font-family:Arial;padding:20px;">
-        <h2 style="color:#16a34a;">Appointment Confirmed</h2>
+        if not email:
+            print("❌ No patient email")
+            return False
 
-        <p>Hello <b>{appointment.patient.first_name}</b>,</p>
+        html = f"""
+        <h2>Appointment Confirmed</h2>
 
-        <p>Your appointment has been confirmed.</p>
+        <p>Hello {appointment.patient.first_name},</p>
 
-        <ul>
-            <li>
-                <b>Doctor:</b>
-                Dr. {appointment.doctor.first_name}
-            </li>
+        <p>Your appointment is confirmed.</p>
 
-            <li>
-                <b>Date:</b>
-                {appointment.appointment_date}
-            </li>
+        <hr>
 
-            <li>
-                <b>Time:</b>
-                {appointment.appointment_time}
-            </li>
-        </ul>
+        <p>
+        <strong>Doctor:</strong>
+        Dr. {appointment.doctor.first_name}
+        </p>
+
+        <p>
+        <strong>Date:</strong>
+        {appointment.appointment_date}
+        </p>
+
+        <p>
+        <strong>Time:</strong>
+        {appointment.appointment_time}
+        </p>
+
+        <hr>
 
         <p>Please arrive 10 minutes early.</p>
 
-        <hr>
+        <h3>Healix Hospital</h3>
+        """
 
-        <p style="font-size:12px;color:gray;">
-            Healix Hospital
-        </p>
-    </div>
-    """
+        return send_email(
+            "Appointment Confirmed - Healix Hospital",
+            html,
+            email
+        )
 
-    return send_email(
-        "Appointment Confirmed | Healix Hospital",
-        html,
-        patient_email
-    )
-
-
-# ==========================================
-# REMINDER EMAIL
-# ==========================================
-def send_reminder_email(appointment):
-
-    patient_email = appointment.patient.email
-
-    if not patient_email:
+    except Exception as e:
+        print("❌ BOOKING EMAIL ERROR:", str(e))
         return False
 
-    html = f"""
-    <div style="font-family:Arial;padding:20px;">
-        <h2 style="color:#f59e0b;">Appointment Reminder</h2>
 
-        <p>Hello <b>{appointment.patient.first_name}</b>,</p>
+# =========================
+# REMINDER EMAIL
+# =========================
+def send_reminder_email(appointment):
 
-        <p>This is a reminder for your upcoming appointment.</p>
+    try:
 
-        <ul>
-            <li>
-                <b>Doctor:</b>
-                Dr. {appointment.doctor.first_name}
-            </li>
+        email = appointment.patient.email
 
-            <li>
-                <b>Date:</b>
-                {appointment.appointment_date}
-            </li>
+        if not email:
+            return False
 
-            <li>
-                <b>Time:</b>
-                {appointment.appointment_time}
-            </li>
-        </ul>
+        html = f"""
+        <h2>Appointment Reminder</h2>
 
-        <p>Please be on time.</p>
+        <p>Hello {appointment.patient.first_name},</p>
+
+        <p>This is reminder for your appointment.</p>
 
         <hr>
 
-        <p style="font-size:12px;color:gray;">
-            Healix Hospital Reminder System
+        <p>
+        <strong>Doctor:</strong>
+        Dr. {appointment.doctor.first_name}
         </p>
-    </div>
-    """
 
-    return send_email(
-        "Appointment Reminder | Healix Hospital",
-        html,
-        patient_email
-    )
+        <p>
+        <strong>Date:</strong>
+        {appointment.appointment_date}
+        </p>
+
+        <p>
+        <strong>Time:</strong>
+        {appointment.appointment_time}
+        </p>
+
+        <hr>
+
+        <h3>Healix Hospital</h3>
+        """
+
+        return send_email(
+            "Appointment Reminder - Healix Hospital",
+            html,
+            email
+        )
+
+    except Exception as e:
+        print("❌ REMINDER EMAIL ERROR:", str(e))
+        return False
+
