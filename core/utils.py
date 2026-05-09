@@ -1,32 +1,35 @@
-from django.core.mail import EmailMultiAlternatives
+import resend
+import random
+
 from django.conf import settings
 from django.urls import reverse
-import random
-import socket
 
 
-# ==========================================
+# =====================================
+# RESEND CONFIG
+# =====================================
+
+resend.api_key = settings.RESEND_API_KEY
+
+
+# =====================================
 # COMMON EMAIL FUNCTION
-# ==========================================
+# =====================================
 
 def send_email(subject, html_content, to_email):
 
     try:
 
-        socket.setdefaulttimeout(30)
+        params = {
+            "from": "onboarding@resend.dev",
+            "to": [to_email],
+            "subject": subject,
+            "html": html_content,
+        }
 
-        msg = EmailMultiAlternatives(
-            subject=subject,
-            body="Healix Hospital Email",
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            to=[to_email]
-        )
+        email = resend.Emails.send(params)
 
-        msg.attach_alternative(html_content, "text/html")
-
-        msg.send(fail_silently=False)
-
-        print("✅ EMAIL SENT")
+        print("✅ EMAIL SENT:", email)
 
         return True
 
@@ -37,17 +40,19 @@ def send_email(subject, html_content, to_email):
         return False
 
 
-# ==========================================
+# =====================================
 # GENERATE OTP
-# ==========================================
+# =====================================
+
 def generate_otp():
 
     return str(random.randint(100000, 999999))
 
 
-# ==========================================
-# REGISTRATION OTP EMAIL
-# ==========================================
+# =====================================
+# OTP EMAIL
+# =====================================
+
 def send_registration_otp(email, otp, username):
 
     verify_url = settings.SITE_URL + reverse("verify_register_otp")
@@ -71,13 +76,7 @@ def send_registration_otp(email, otp, username):
 
             <p>Hello {username},</p>
 
-            <p>
-                Thank you for registering with Healix Hospital.
-            </p>
-
-            <p>
-                Your OTP verification code is:
-            </p>
+            <p>Your verification code is:</p>
 
             <h1 style="
                 text-align:center;
@@ -91,11 +90,11 @@ def send_registration_otp(email, otp, username):
             </h1>
 
             <p>
-                This OTP expires in 10 minutes.
+                OTP expires in 10 minutes.
             </p>
 
             <p>
-                Verification Page:
+                Verification page:
             </p>
 
             <p>
@@ -122,9 +121,10 @@ def send_registration_otp(email, otp, username):
     )
 
 
-# ==========================================
-# BOOKING CONFIRMATION EMAIL
-# ==========================================
+# =====================================
+# BOOKING EMAIL
+# =====================================
+
 def send_booking_confirmation_email(appointment):
 
     email = appointment.patient.email
@@ -147,10 +147,10 @@ def send_booking_confirmation_email(appointment):
             </h2>
 
             <p>
-                Your appointment has been successfully booked.
+                Your appointment booking is confirmed.
             </p>
 
-            <table style="width:100%;padding:10px;">
+            <table style="width:100%;">
 
                 <tr>
                     <td><b>Doctor</b></td>
@@ -183,15 +183,16 @@ def send_booking_confirmation_email(appointment):
     """
 
     return send_email(
-        "Appointment Confirmation - Healix Hospital",
+        "Appointment Confirmed - Healix Hospital",
         html,
         email
     )
 
 
-# ==========================================
+# =====================================
 # REMINDER EMAIL
-# ==========================================
+# =====================================
+
 def send_reminder_email(appointment):
 
     email = appointment.patient.email
@@ -214,10 +215,10 @@ def send_reminder_email(appointment):
             </h2>
 
             <p>
-                This is a reminder for your upcoming appointment.
+                You have an upcoming appointment.
             </p>
 
-            <table style="width:100%;padding:10px;">
+            <table style="width:100%;">
 
                 <tr>
                     <td><b>Doctor</b></td>
