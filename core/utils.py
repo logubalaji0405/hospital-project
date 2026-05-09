@@ -5,9 +5,9 @@ from django.urls import reverse
 import random
 
 
-# ======================
-# SENDGRID SAFE EMAIL
-# ======================
+# ==========================================
+# COMMON SENDGRID EMAIL FUNCTION
+# ==========================================
 def send_email(subject, html_content, to_email):
     try:
         message = Mail(
@@ -18,65 +18,170 @@ def send_email(subject, html_content, to_email):
         )
 
         sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
+
         response = sg.send(message)
 
-        print("✅ SendGrid:", response.status_code)
+        print("✅ SENDGRID STATUS:", response.status_code)
+
         return response.status_code in [200, 202]
 
     except Exception as e:
-        print("❌ SendGrid Error:", e)
+        print("❌ SENDGRID ERROR:", str(e))
         return False
 
 
-# ======================
-# OTP
-# ======================
+# ==========================================
+# GENERATE OTP
+# ==========================================
 def generate_otp():
     return str(random.randint(100000, 999999))
 
 
+# ==========================================
+# REGISTRATION OTP EMAIL
+# ==========================================
 def send_registration_otp(email, otp, username):
+
     verify_url = settings.SITE_URL + reverse("verify_register_otp")
 
     html = f"""
-    <h2>Healix Hospital</h2>
-    <p>Hello {username},</p>
-    <p>Your OTP is:</p>
-    <h1>{otp}</h1>
-    <p>Verify here:</p>
-    <a href="{verify_url}">Verify OTP</a>
+    <div style="font-family:Arial;padding:20px;">
+        <h2 style="color:#2563eb;">Healix Hospital</h2>
+
+        <p>Hello <b>{username}</b>,</p>
+
+        <p>Your OTP is:</p>
+
+        <h1 style="color:#2563eb;">{otp}</h1>
+
+        <p>This OTP is valid for 5 minutes.</p>
+
+        <p>
+            <a href="{verify_url}"
+               style="
+               background:#2563eb;
+               color:white;
+               padding:10px 20px;
+               text-decoration:none;
+               border-radius:5px;">
+               Verify OTP
+            </a>
+        </p>
+
+        <hr>
+
+        <p style="font-size:12px;color:gray;">
+            Healix Hospital Secure Verification
+        </p>
+    </div>
     """
 
-    return send_email("OTP Verification", html, email)
+    return send_email(
+        "Healix HMS OTP Verification",
+        html,
+        email
+    )
 
 
-# ======================
-# BOOKING EMAIL
-# ======================
+# ==========================================
+# BOOKING CONFIRMATION EMAIL
+# ==========================================
 def send_booking_confirmation_email(appointment):
-    email = appointment.patient.email
+
+    patient_email = appointment.patient.email
+
+    if not patient_email:
+        return False
 
     html = f"""
-    <h2>Appointment Confirmed</h2>
-    <p>Doctor: {appointment.doctor.first_name}</p>
-    <p>Date: {appointment.appointment_date}</p>
-    <p>Time: {appointment.appointment_time}</p>
+    <div style="font-family:Arial;padding:20px;">
+        <h2 style="color:#16a34a;">Appointment Confirmed</h2>
+
+        <p>Hello <b>{appointment.patient.first_name}</b>,</p>
+
+        <p>Your appointment has been confirmed.</p>
+
+        <ul>
+            <li>
+                <b>Doctor:</b>
+                Dr. {appointment.doctor.first_name}
+            </li>
+
+            <li>
+                <b>Date:</b>
+                {appointment.appointment_date}
+            </li>
+
+            <li>
+                <b>Time:</b>
+                {appointment.appointment_time}
+            </li>
+        </ul>
+
+        <p>Please arrive 10 minutes early.</p>
+
+        <hr>
+
+        <p style="font-size:12px;color:gray;">
+            Healix Hospital
+        </p>
+    </div>
     """
 
-    return send_email("Appointment Confirmed", html, email)
+    return send_email(
+        "Appointment Confirmed | Healix Hospital",
+        html,
+        patient_email
+    )
 
 
-# ======================
-# REMINDER
-# ======================
+# ==========================================
+# REMINDER EMAIL
+# ==========================================
 def send_reminder_email(appointment):
-    email = appointment.patient.email
+
+    patient_email = appointment.patient.email
+
+    if not patient_email:
+        return False
 
     html = f"""
-    <h2>Reminder</h2>
-    <p>Doctor: {appointment.doctor.first_name}</p>
-    <p>Date: {appointment.appointment_date}</p>
-    <p>Time: {appointment.appointment_time}</p>
+    <div style="font-family:Arial;padding:20px;">
+        <h2 style="color:#f59e0b;">Appointment Reminder</h2>
+
+        <p>Hello <b>{appointment.patient.first_name}</b>,</p>
+
+        <p>This is a reminder for your upcoming appointment.</p>
+
+        <ul>
+            <li>
+                <b>Doctor:</b>
+                Dr. {appointment.doctor.first_name}
+            </li>
+
+            <li>
+                <b>Date:</b>
+                {appointment.appointment_date}
+            </li>
+
+            <li>
+                <b>Time:</b>
+                {appointment.appointment_time}
+            </li>
+        </ul>
+
+        <p>Please be on time.</p>
+
+        <hr>
+
+        <p style="font-size:12px;color:gray;">
+            Healix Hospital Reminder System
+        </p>
+    </div>
     """
 
-    return send_email("Appointment Reminder", html, email)
+    return send_email(
+        "Appointment Reminder | Healix Hospital",
+        html,
+        patient_email
+    )
