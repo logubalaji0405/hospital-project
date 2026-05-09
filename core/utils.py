@@ -2,14 +2,18 @@ from django.core.mail import EmailMultiAlternatives
 from django.conf import settings
 from django.urls import reverse
 import random
+import socket
 
 
 # ==========================================
 # COMMON EMAIL FUNCTION
 # ==========================================
+
 def send_email(subject, html_content, to_email):
 
     try:
+
+        socket.setdefaulttimeout(30)
 
         msg = EmailMultiAlternatives(
             subject=subject,
@@ -20,9 +24,9 @@ def send_email(subject, html_content, to_email):
 
         msg.attach_alternative(html_content, "text/html")
 
-        msg.send()
+        msg.send(fail_silently=False)
 
-        print("✅ EMAIL SENT TO:", to_email)
+        print("✅ EMAIL SENT")
 
         return True
 
