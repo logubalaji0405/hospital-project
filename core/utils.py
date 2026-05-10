@@ -56,74 +56,71 @@ def send_registration_otp(email, otp, username):
         email
     )
 
-
-# =========================
-# REMINDER EMAIL
-# =========================
-def send_reminder_email(appointment):
-
+def send_booking_confirmation_email(appointment):
     try:
+        subject = "Appointment Confirmed | Healix Hospital"
 
-        email = appointment.patient.email
+        message = f"""
+Hello {appointment.patient.first_name},
 
-        html = f"""
-        <div style="font-family: Arial; padding:20px;">
+Your appointment has been confirmed.
 
-            <h2 style="color:#ffc107;">
-                Appointment Reminder
-            </h2>
+Doctor: Dr. {appointment.doctor.first_name}
+Date: {appointment.appointment_date}
+Time: {appointment.appointment_time}
 
-            <p>Hello <b>{appointment.patient.username}</b>,</p>
+Thank you,
+Healix Hospital
+"""
 
-            <p>
-                This is a reminder for your appointment.
-            </p>
-
-            <table style="
-                border-collapse: collapse;
-                width:100%;
-            " border="1" cellpadding="10">
-
-                <tr>
-                    <th>Doctor</th>
-                    <td>
-                        Dr. {appointment.doctor.first_name}
-                    </td>
-                </tr>
-
-                <tr>
-                    <th>Date</th>
-                    <td>
-                        {appointment.appointment_date}
-                    </td>
-                </tr>
-
-                <tr>
-                    <th>Time</th>
-                    <td>
-                        {appointment.appointment_time}
-                    </td>
-                </tr>
-
-            </table>
-
-            <br>
-
-            <p>
-                Healix Hospital
-            </p>
-
-        </div>
-        """
-
-        return send_email(
-            "Appointment Reminder - Healix Hospital",
-            html,
-            email
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [appointment.patient.email],
+            fail_silently=True,
         )
 
-    except Exception as e:
+        print("✅ Confirmation email sent")
 
-        print("❌ REMINDER EMAIL ERROR:", str(e))
+        return True
+
+    except Exception as e:
+        print("❌ Confirmation email error:", e)
+
+        return False
+
+
+def send_reminder_email(appointment):
+    try:
+        subject = "Appointment Reminder | Healix Hospital"
+
+        message = f"""
+Hello {appointment.patient.first_name},
+
+Reminder for your appointment.
+
+Doctor: Dr. {appointment.doctor.first_name}
+Date: {appointment.appointment_date}
+Time: {appointment.appointment_time}
+
+Thank you,
+Healix Hospital
+"""
+
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [appointment.patient.email],
+            fail_silently=True,
+        )
+
+        print("✅ Reminder email sent")
+
+        return True
+
+    except Exception as e:
+        print("❌ Reminder email error:", e)
 
         return False
