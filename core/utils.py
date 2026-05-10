@@ -14,16 +14,16 @@ def send_email(subject, html_content, to_email):
 
         msg = EmailMultiAlternatives(
             subject=subject,
-            body="Healix Hospital Email",
+            body="Healix Hospital",
             from_email=settings.DEFAULT_FROM_EMAIL,
             to=[to_email],
         )
 
         msg.attach_alternative(html_content, "text/html")
 
-        msg.send(fail_silently=False)
+        result = msg.send(fail_silently=False)
 
-        print("✅ EMAIL SENT SUCCESS")
+        print("✅ EMAIL SENT:", result)
 
         return True
 
@@ -32,7 +32,6 @@ def send_email(subject, html_content, to_email):
         print("❌ EMAIL ERROR:", str(e))
 
         return False
-
 
 # =========================
 # GENERATE OTP
