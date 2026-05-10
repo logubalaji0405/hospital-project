@@ -1,13 +1,8 @@
 import random
-import resend
 
 from django.conf import settings
+from django.core.mail import EmailMultiAlternatives
 from django.urls import reverse
-
-# =========================
-# RESEND API KEY
-# =========================
-resend.api_key = settings.RESEND_API_KEY
 
 
 # =========================
@@ -17,17 +12,18 @@ def send_email(subject, html_content, to_email):
 
     try:
 
-        params = {
-            "from": settings.DEFAULT_FROM_EMAIL,
-            "to": [to_email],
-            "subject": subject,
-            "html": html_content,
-        }
+        msg = EmailMultiAlternatives(
+            subject=subject,
+            body="Healix Hospital Email",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[to_email],
+        )
 
-        email = resend.Emails.send(params)
+        msg.attach_alternative(html_content, "text/html")
+
+        msg.send(fail_silently=False)
 
         print("✅ EMAIL SENT SUCCESS")
-        print(email)
 
         return True
 
