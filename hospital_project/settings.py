@@ -96,19 +96,16 @@ CSRF_COOKIE_SECURE = True
 # EMAIL SMTP SETTINGS
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp-relay.brevo.com")
-
 EMAIL_PORT = 587
-
 EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
 
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
-
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 
-DEFAULT_FROM_EMAIL = f"Healix Hospital <{EMAIL_HOST_USER}>"
-
-SERVER_EMAIL = EMAIL_HOST_USER
-
-EMAIL_TIMEOUT = 30
+DEFAULT_FROM_EMAIL = "Healix Hospital <healix.hms@gmail.com>"
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+EMAIL_TIMEOUT = 60
 SITE_URL = "https://hospital-project-etq9.onrender.com"
