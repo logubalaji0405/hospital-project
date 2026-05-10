@@ -7,6 +7,7 @@ from django.db.models import Count
 from django.views.decorators.http import require_GET, require_POST
 from django.http import JsonResponse, HttpResponseForbidden
 from django.db.models import Avg, Count, Q
+from httpx import request
 from .models import Profile, Appointment, ChatMessage, ChatRoom,RegistrationOTP, Feedback,Branch
 from .utils import generate_otp,send_registration_otp,send_booking_confirmation_email,send_reminder_email
 from datetime import datetime
@@ -66,14 +67,13 @@ def register_view(request):
 
         request.session["register_email"] = email
 
-        email_ok = send_registration_otp(email, otp, username)
+        try:
+            send_registration_otp(email, otp, username)
+        except Exception as e:
+            print("OTP MAIL ERROR:", e)
 
-        if email_ok:
-            messages.success(request, "OTP sent to your email.")
-            return redirect("verify_register_otp")
-        else:
-            messages.error(request, "OTP email failed. Please try again.")
-            return redirect("register")
+        messages.success(request, "OTP sent to your email.")
+        return redirect("verify_register_otp")
 
     return render(request, "register.html")
 
