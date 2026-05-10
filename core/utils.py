@@ -1,13 +1,9 @@
-import random
-import traceback
-from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
-from django.urls import reverse
+from django.conf import settings
+import traceback
+import random
 
 
-# =========================
-# COMMON EMAIL FUNCTION
-# =========================
 def send_email(subject, html_content, to_email):
     try:
         msg = EmailMultiAlternatives(
@@ -29,22 +25,15 @@ def send_email(subject, html_content, to_email):
         print("❌ EMAIL ERROR:", str(e))
         traceback.print_exc()
 
-        # IMPORTANT:
-        # never crash the website
         return False
 
 
-# =========================
-# GENERATE OTP
-# =========================
 def generate_otp():
     return str(random.randint(100000, 999999))
 
 
-# =========================
-# REGISTRATION OTP EMAIL
-# =========================
 def send_registration_otp(email, otp, username):
+
     html = f"""
     <h2>Healix Hospital OTP Verification</h2>
 
@@ -57,6 +46,7 @@ def send_registration_otp(email, otp, username):
     <p>This OTP is valid for 5 minutes.</p>
 
     <br>
+
     <p>Healix Hospital Team</p>
     """
 
@@ -65,76 +55,6 @@ def send_registration_otp(email, otp, username):
         html,
         email
     )
-
-# =========================
-# BOOKING CONFIRMATION
-# =========================
-def send_booking_confirmation_email(appointment):
-
-    try:
-
-        email = appointment.patient.email
-
-        html = f"""
-        <div style="font-family: Arial; padding:20px;">
-
-            <h2 style="color:#198754;">
-                Appointment Confirmed
-            </h2>
-
-            <p>Hello <b>{appointment.patient.username}</b>,</p>
-
-            <p>Your appointment has been confirmed.</p>
-
-            <table style="
-                border-collapse: collapse;
-                width:100%;
-            " border="1" cellpadding="10">
-
-                <tr>
-                    <th>Doctor</th>
-                    <td>
-                        Dr. {appointment.doctor.first_name}
-                    </td>
-                </tr>
-
-                <tr>
-                    <th>Date</th>
-                    <td>
-                        {appointment.appointment_date}
-                    </td>
-                </tr>
-
-                <tr>
-                    <th>Time</th>
-                    <td>
-                        {appointment.appointment_time}
-                    </td>
-                </tr>
-
-            </table>
-
-            <br>
-
-            <p>
-                Thank you for choosing
-                Healix Hospital.
-            </p>
-
-        </div>
-        """
-
-        return send_email(
-            "Appointment Confirmed - Healix Hospital",
-            html,
-            email
-        )
-
-    except Exception as e:
-
-        print("❌ BOOKING EMAIL ERROR:", str(e))
-
-        return False
 
 
 # =========================

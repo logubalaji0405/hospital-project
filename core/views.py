@@ -51,9 +51,9 @@ def register_view(request):
             return redirect("register")
 
         otp = generate_otp()
-
+        
         RegistrationOTP.objects.filter(email=email).delete()
-
+        
         RegistrationOTP.objects.create(
             first_name=first_name,
             username=username,
@@ -64,16 +64,17 @@ def register_view(request):
             department=department,
             otp=otp
         )
+        
+    request.session["register_email"] = email
 
-        request.session["register_email"] = email
+    try:
+        send_registration_otp(email, otp, username)
+    except Exception as e:
+        print("OTP MAIL ERROR:", e)
 
-        try:
-            send_registration_otp(email, otp, username)
-        except Exception as e:
-            print("OTP MAIL ERROR:", e)
+    messages.success(request, "OTP sent to your email.")
 
-        messages.success(request, "OTP sent to your email.")
-        return redirect("verify_register_otp")
+    return redirect("verify_register_otp")
 
     return render(request, "register.html")
 
