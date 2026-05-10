@@ -1,5 +1,5 @@
 import random
-
+import traceback
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.urls import reverse
@@ -9,29 +9,30 @@ from django.urls import reverse
 # COMMON EMAIL FUNCTION
 # =========================
 def send_email(subject, html_content, to_email):
-
     try:
-
         msg = EmailMultiAlternatives(
             subject=subject,
-            body="Healix Hospital",
+            body=html_content,
             from_email=settings.DEFAULT_FROM_EMAIL,
             to=[to_email],
         )
 
         msg.attach_alternative(html_content, "text/html")
 
-        result = msg.send(fail_silently=False)
+        result = msg.send(fail_silently=True)
 
         print("✅ EMAIL SENT:", result)
 
         return True
 
     except Exception as e:
-
         print("❌ EMAIL ERROR:", str(e))
+        traceback.print_exc()
 
+        # IMPORTANT:
+        # never crash the website
         return False
+
 
 # =========================
 # GENERATE OTP
@@ -44,53 +45,19 @@ def generate_otp():
 # REGISTRATION OTP EMAIL
 # =========================
 def send_registration_otp(email, otp, username):
-
-    verify_url = settings.SITE_URL + reverse("verify_register_otp")
-
     html = f"""
-    <div style="font-family: Arial; padding:20px;">
+    <h2>Healix Hospital OTP Verification</h2>
 
-        <h2 style="color:#0d6efd;">
-            Healix Hospital
-        </h2>
+    <p>Hello {username},</p>
 
-        <p>Hello <b>{username}</b>,</p>
+    <p>Your OTP is:</p>
 
-        <p>Your OTP for account verification is:</p>
+    <h1>{otp}</h1>
 
-        <h1 style="
-            background:#0d6efd;
-            color:white;
-            padding:15px;
-            border-radius:10px;
-            width:200px;
-            text-align:center;
-        ">
-            {otp}
-        </h1>
+    <p>This OTP is valid for 5 minutes.</p>
 
-        <p>
-            Verify your account below:
-        </p>
-
-        <a href="{verify_url}" style="
-            background:#198754;
-            color:white;
-            padding:12px 20px;
-            text-decoration:none;
-            border-radius:8px;
-        ">
-            Verify OTP
-        </a>
-
-        <br><br>
-
-        <p>
-            Thanks,<br>
-            Healix Hospital
-        </p>
-
-    </div>
+    <br>
+    <p>Healix Hospital Team</p>
     """
 
     return send_email(
@@ -98,7 +65,6 @@ def send_registration_otp(email, otp, username):
         html,
         email
     )
-
 
 # =========================
 # BOOKING CONFIRMATION
