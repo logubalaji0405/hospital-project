@@ -9,12 +9,11 @@ from django.http import JsonResponse, HttpResponseForbidden
 from django.db.models import Avg, Count, Q
 from httpx import request
 from .models import Profile, Appointment, ChatMessage, ChatRoom,RegistrationOTP, Feedback,Branch
-from .utils import generate_otp,send_registration_otp,send_booking_confirmation_email,send_reminder_email
-from datetime import datetime
+from .utils import generate_otp,send_registration_otp,send_booking_confirmation_email, send_booking_rejected_email,send_reminder_email
+from datetime import datetime,timedelta
 from django.http import HttpResponse
 from django.utils import timezone
 from .utils import send_reminder_email
-from .utils import generate_otp, send_registration_otp
 from django.contrib.auth.hashers import make_password
 import threading
 
@@ -77,7 +76,7 @@ def register_view(request):
 
     return render(request, "register.html")
 
-    
+
 def resend_register_otp_view(request):
     email = request.session.get("register_email")
 
@@ -353,20 +352,21 @@ def booking_history(request):
     return render(request, 'booking_history.html', {'appointments': appointments})
 
 
-@login_required
 def confirm_booking(request, appointment_id):
-    appointment = get_object_or_404(Appointment, id=appointment_id)
+    appointment = Appointment.objects.get(id=appointment_id)
 
     appointment.status = "confirmed"
     appointment.reminder_sent = False
     appointment.save()
 
-    # ✅ SAFE EMAIL (NO CRASH)
-    send_in_background(send_booking_confirmation_email, appointment)
+    try:
+        send_booking_confirmation_email(appointment)
+    except Exception as e:
+        print("CONFIRM MAIL ERROR:", e)
 
-    messages.success(request, "Appointment confirmed")
-    return redirect("doctor_dashboard")
-    
+    messages.success(request, "Appointment confirmed successfully.")
+
+    return redirect("doctor_dashboard")    
 
 @login_required
 def reject_booking(request, appointment_id):
@@ -382,18 +382,21 @@ def reject_booking(request, appointment_id):
     return redirect('doctor_dashboard')
 
 
-@login_required
-def approve_doctor(request, doctor_id):
-    if not hasattr(request.user, 'profile') or request.user.profile.role != 'admin':
-        messages.error(request, "Access denied.")
-        return redirect('home')
+def reject_booking(request, appointment_id):
+    appointment = Appointment.objects.get(id=appointment_id)
 
-    doctor = get_object_or_404(Profile, id=doctor_id, role='doctor')
-    doctor.is_approved = True
-    doctor.save()
+    appointment.status = "rejected"
+    appointment.save()
 
-    messages.success(request, f"{doctor.user.username} approved successfully.")
-    return redirect('admin_dashboard')
+    try:
+        send_booking_rejected_email(appointment)
+    except Exception as e:
+        print("REJECT MAIL ERROR:", e)
+
+    messages.success(request, "Appointment rejected.")
+
+    return redirect("doctor_dashboard")
+
 
 @login_required
 def doctor_list(request):
@@ -600,38 +603,44 @@ def run_reminders(request):
     key = request.GET.get("key")
 
     if key != "hms_secure_key_123":
-        return JsonResponse({"error": "unauthorized"}, status=403)
+        return HttpResponse("Unauthorized", status=401)
 
     now = timezone.localtime()
 
+    target_start = now + timedelta(hours=24)
+    target_end = target_start + timedelta(minutes=5)
+
     appointments = Appointment.objects.filter(
-        status='confirmed',
-        reminder_sent=False,
-        appointment_date=now.date()
+        status="confirmed",
+        reminder_sent=False
     )
 
-    sent = 0
+    sent_count = 0
 
-    for a in appointments:
-        appointment_time = datetime.combine(
-            a.appointment_date,
-            a.appointment_time
+    for appointment in appointments:
+        appointment_datetime = datetime.combine(
+            appointment.appointment_date,
+            appointment.appointment_time
         )
 
-        appointment_time = timezone.make_aware(
-            appointment_time,
+        appointment_datetime = timezone.make_aware(
+            appointment_datetime,
             timezone.get_current_timezone()
         )
 
-        minutes_left = (appointment_time - now).total_seconds() / 60
+        if target_start <= appointment_datetime <= target_end:
+            try:
+                send_reminder_email(appointment)
 
-        if 0 < minutes_left <= 10:
-            if send_reminder_email(a):
-                a.reminder_sent = True
-                a.save()
-                sent += 1
+                appointment.reminder_sent = True
+                appointment.save()
 
-    return JsonResponse({"status": "ok", "sent": sent})
+                sent_count += 1
+
+            except Exception as e:
+                print("REMINDER ERROR:", e)
+
+    return HttpResponse(f"Reminder sent: {sent_count}")
 
 
 def verify_register_otp_view(request):

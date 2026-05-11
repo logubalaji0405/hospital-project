@@ -1,33 +1,13 @@
-from django.core.mail import EmailMultiAlternatives, send_mail
-from django.conf import settings
-import traceback
 import random
 import requests
-
-def send_email(subject, html_content, to_email):
-    try:
-        msg = EmailMultiAlternatives(
-            subject=subject,
-            body=html_content,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            to=[to_email],
-        )
-        msg.attach_alternative(html_content, "text/html")
-        result = msg.send(fail_silently=False)
-        print("✅ EMAIL SENT:", result)
-        return True
-    except Exception as e:
-        print("❌ EMAIL ERROR:", str(e))
-        traceback.print_exc()
-        return False
+from django.conf import settings
 
 
 def generate_otp():
     return str(random.randint(100000, 999999))
 
 
-
-def send_registration_otp(email, otp, username):
+def send_brevo_email(to_email, to_name, subject, html_content):
     try:
         url = "https://api.brevo.com/v3/smtp/email"
 
@@ -38,16 +18,12 @@ def send_registration_otp(email, otp, username):
             },
             "to": [
                 {
-                    "email": email,
-                    "name": username
+                    "email": to_email,
+                    "name": to_name
                 }
             ],
-            "subject": "OTP Verification - Healix Hospital",
-            "htmlContent": f"""
-                <h2>Healix Hospital OTP Verification</h2>
-                <p>Hello {username},</p>
-                <h1>{otp}</h1>
-            """
+            "subject": subject,
+            "htmlContent": html_content
         }
 
         headers = {
@@ -56,12 +32,7 @@ def send_registration_otp(email, otp, username):
             "content-type": "application/json"
         }
 
-        response = requests.post(
-            url,
-            json=payload,
-            headers=headers,
-            timeout=10
-        )
+        response = requests.post(url, json=payload, headers=headers, timeout=10)
 
         print("BREVO STATUS:", response.status_code)
         print("BREVO RESPONSE:", response.text)
@@ -73,67 +44,92 @@ def send_registration_otp(email, otp, username):
         return False
 
 
+def send_registration_otp(email, otp, username):
+    html = f"""
+    <h2>Healix Hospital OTP Verification</h2>
+    <p>Hello {username},</p>
+    <p>Your OTP is:</p>
+    <h1 style="color:#0d6efd;">{otp}</h1>
+    <p>This OTP is valid for 5 minutes.</p>
+    <br>
+    <p>Healix Hospital Team</p>
+    """
+
+    return send_brevo_email(
+        email,
+        username,
+        "OTP Verification - Healix Hospital",
+        html
+    )
+
+
 def send_booking_confirmation_email(appointment):
-    try:
-        subject = "Appointment Confirmed | Healix Hospital"
+    html = f"""
+    <h2>✅ Appointment Confirmed</h2>
+    <p>Hello {appointment.patient.first_name or appointment.patient.username},</p>
+    <p>Your appointment has been confirmed successfully.</p>
 
-        message = f"""
-Hello {appointment.patient.first_name or appointment.patient.username},
+    <p><b>Doctor:</b> Dr. {appointment.doctor.first_name or appointment.doctor.username}</p>
+    <p><b>Date:</b> {appointment.appointment_date}</p>
+    <p><b>Time:</b> {appointment.appointment_time}</p>
+    <p><b>Reason:</b> {appointment.reason}</p>
 
-Your appointment has been confirmed.
+    <p>Please arrive 10 minutes before your appointment time.</p>
+    <br>
+    <p>Healix Hospital Team</p>
+    """
 
-Doctor: Dr. {appointment.doctor.first_name or appointment.doctor.username}
-Date: {appointment.appointment_date}
-Time: {appointment.appointment_time}
+    return send_brevo_email(
+        appointment.patient.email,
+        appointment.patient.username,
+        "Appointment Confirmed - Healix Hospital",
+        html
+    )
 
-Thank you,
-Healix Hospital
-"""
 
-        send_mail(
-            subject,
-            message,
-            settings.DEFAULT_FROM_EMAIL,
-            [appointment.patient.email],
-            fail_silently=True,
-        )
+def send_booking_rejected_email(appointment):
+    html = f"""
+    <h2>❌ Appointment Rejected</h2>
+    <p>Hello {appointment.patient.first_name or appointment.patient.username},</p>
+    <p>Sorry, your appointment request has been rejected.</p>
 
-        print("✅ Confirmation email sent")
-        return True
+    <p><b>Doctor:</b> Dr. {appointment.doctor.first_name or appointment.doctor.username}</p>
+    <p><b>Date:</b> {appointment.appointment_date}</p>
+    <p><b>Time:</b> {appointment.appointment_time}</p>
+    <p><b>Reason:</b> {appointment.reason}</p>
 
-    except Exception as e:
-        print("❌ Confirmation email error:", e)
-        return False
+    <p>Please book another available appointment slot.</p>
+    <br>
+    <p>Healix Hospital Team</p>
+    """
+
+    return send_brevo_email(
+        appointment.patient.email,
+        appointment.patient.username,
+        "Appointment Rejected - Healix Hospital",
+        html
+    )
 
 
 def send_reminder_email(appointment):
-    try:
-        subject = "Appointment Reminder | Healix Hospital"
+    html = f"""
+    <h2>⏰ Appointment Reminder</h2>
+    <p>Hello {appointment.patient.first_name or appointment.patient.username},</p>
+    <p>This is a reminder for your upcoming appointment.</p>
 
-        message = f"""
-Hello {appointment.patient.first_name or appointment.patient.username},
+    <p><b>Doctor:</b> Dr. {appointment.doctor.first_name or appointment.doctor.username}</p>
+    <p><b>Date:</b> {appointment.appointment_date}</p>
+    <p><b>Time:</b> {appointment.appointment_time}</p>
+    <p><b>Reason:</b> {appointment.reason}</p>
 
-Reminder for your appointment.
+    <p>Please arrive 10 minutes early.</p>
+    <br>
+    <p>Healix Hospital Team</p>
+    """
 
-Doctor: Dr. {appointment.doctor.first_name or appointment.doctor.username}
-Date: {appointment.appointment_date}
-Time: {appointment.appointment_time}
-
-Thank you,
-Healix Hospital
-"""
-
-        send_mail(
-            subject,
-            message,
-            settings.DEFAULT_FROM_EMAIL,
-            [appointment.patient.email],
-            fail_silently=True,
-        )
-
-        print("✅ Reminder email sent")
-        return True
-
-    except Exception as e:
-        print("❌ Reminder email error:", e)
-        return False
+    return send_brevo_email(
+        appointment.patient.email,
+        appointment.patient.username,
+        "Appointment Reminder - Healix Hospital",
+        html
+    )
