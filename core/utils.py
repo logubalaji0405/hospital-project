@@ -46,11 +46,7 @@ def send_registration_otp(email, otp, username):
             "htmlContent": f"""
                 <h2>Healix Hospital OTP Verification</h2>
                 <p>Hello {username},</p>
-                <p>Your OTP is:</p>
                 <h1>{otp}</h1>
-                <p>This OTP is valid for 5 minutes.</p>
-                <br>
-                <p>Healix Hospital Team</p>
             """
         }
 
@@ -60,15 +56,20 @@ def send_registration_otp(email, otp, username):
             "content-type": "application/json"
         }
 
-        response = requests.post(url, json=payload, headers=headers, timeout=10)
+        response = requests.post(
+            url,
+            json=payload,
+            headers=headers,
+            timeout=10
+        )
 
-        print("BREVO API STATUS:", response.status_code)
-        print("BREVO API RESPONSE:", response.text)
+        print("BREVO STATUS:", response.status_code)
+        print("BREVO RESPONSE:", response.text)
 
         return response.status_code in [200, 201, 202]
 
     except Exception as e:
-        print("BREVO API ERROR:", e)
+        print("BREVO ERROR:", e)
         return False
 
 
