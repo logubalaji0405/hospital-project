@@ -599,7 +599,6 @@ def feedback_list(request):
 
 
 
-
 def run_reminders(request):
     key = request.GET.get("key")
 
@@ -607,12 +606,6 @@ def run_reminders(request):
         return HttpResponse("Unauthorized", status=401)
 
     now = timezone.localtime()
-
-    target_start = now + timedelta(hours=24)
-    target_end = target_start + timedelta(minutes=5)
-
-    print("Current time:", now)
-    print("Checking between:", target_start, target_end)
 
     appointments = Appointment.objects.filter(
         status="confirmed",
@@ -635,20 +628,24 @@ def run_reminders(request):
                 timezone.get_current_timezone()
             )
 
-        print("Checking appointment:", appointment.id, appointment_datetime)
+        minutes_left = (appointment_datetime - now).total_seconds() / 60
 
-        if target_start <= appointment_datetime <= target_end:
+        print("Appointment:", appointment.id)
+        print("Appointment time:", appointment_datetime)
+        print("Minutes left:", minutes_left)
+
+        # ✅ 24 hours before window: 23h55m to 24h05m
+        if 1435 <= minutes_left <= 1445:
             found += 1
 
             ok = send_reminder_email(appointment)
+
+            print("Brevo send result:", ok)
 
             if ok:
                 appointment.reminder_sent = True
                 appointment.save(update_fields=["reminder_sent"])
                 sent += 1
-                print("✅ Reminder sent:", appointment.id)
-            else:
-                print("❌ Reminder failed:", appointment.id)
 
     return HttpResponse(f"Matching: {found}, Sent: {sent}")
 
