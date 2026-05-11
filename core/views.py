@@ -599,6 +599,7 @@ def feedback_list(request):
 
 
 
+
 def run_reminders(request):
     key = request.GET.get("key")
 
@@ -610,46 +611,46 @@ def run_reminders(request):
     target_start = now + timedelta(hours=24)
     target_end = target_start + timedelta(minutes=5)
 
-    print("Current Time:", now)
-    print("Checking Between:", target_start, target_end)
+    print("Current time:", now)
+    print("Checking between:", target_start, target_end)
 
     appointments = Appointment.objects.filter(
         status="confirmed",
-        reminder_sent=False
-    )
+        reminder_sent=False,
+        appointment_date__gte=now.date()
+    ).select_related("patient", "doctor")
 
-    sent_count = 0
+    found = 0
+    sent = 0
 
     for appointment in appointments:
-
         appointment_datetime = datetime.combine(
             appointment.appointment_date,
             appointment.appointment_time
         )
 
-        appointment_datetime = timezone.make_aware(
-            appointment_datetime,
-            timezone.get_current_timezone()
-        )
+        if timezone.is_naive(appointment_datetime):
+            appointment_datetime = timezone.make_aware(
+                appointment_datetime,
+                timezone.get_current_timezone()
+            )
 
-        print("Checking appointment:", appointment.id)
+        print("Checking appointment:", appointment.id, appointment_datetime)
 
         if target_start <= appointment_datetime <= target_end:
+            found += 1
 
-            try:
-                send_reminder_email(appointment)
+            ok = send_reminder_email(appointment)
 
+            if ok:
                 appointment.reminder_sent = True
-                appointment.save()
-
-                sent_count += 1
-
+                appointment.save(update_fields=["reminder_sent"])
+                sent += 1
                 print("✅ Reminder sent:", appointment.id)
+            else:
+                print("❌ Reminder failed:", appointment.id)
 
-            except Exception as e:
-                print("❌ Reminder error:", e)
-
-    return HttpResponse(f"Reminder sent: {sent_count}")
+    return HttpResponse(f"Matching: {found}, Sent: {sent}")
 
 
 def verify_register_otp_view(request):
