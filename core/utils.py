@@ -113,23 +113,78 @@ def send_booking_rejected_email(appointment):
 
 def send_reminder_email(appointment):
     html = f"""
-    <h2>⏰ Appointment Reminder</h2>
-    <p>Hello {appointment.patient.first_name or appointment.patient.username},</p>
-    <p>This is a reminder for your upcoming appointment.</p>
+    <div style="font-family:Arial,sans-serif;padding:20px;background:#f4f8ff;">
+        
+        <div style="max-width:600px;margin:auto;background:white;padding:30px;border-radius:12px;box-shadow:0 0 10px rgba(0,0,0,0.1);">
+            
+            <h1 style="color:#0d6efd;text-align:center;">
+                ⏰ Appointment Reminder
+            </h1>
 
-    <p><b>Doctor:</b> Dr. {appointment.doctor.first_name or appointment.doctor.username}</p>
-    <p><b>Date:</b> {appointment.appointment_date}</p>
-    <p><b>Time:</b> {appointment.appointment_time}</p>
-    <p><b>Reason:</b> {appointment.reason}</p>
+            <p>Hello 
+                <b>
+                    {appointment.patient.first_name or appointment.patient.username}
+                </b>,
+            </p>
 
-    <p>Please arrive 10 minutes early.</p>
-    <br>
-    <p>Healix Hospital Team</p>
+            <p>
+                This is a friendly reminder that your appointment is scheduled within the next 24 hours.
+            </p>
+
+            <hr>
+
+            <h3 style="color:#198754;">📋 Appointment Details</h3>
+
+            <p>
+                <b>👨‍⚕️ Doctor:</b>
+                Dr. {appointment.doctor.first_name or appointment.doctor.username}
+            </p>
+
+            <p>
+                <b>📅 Date:</b>
+                {appointment.appointment_date}
+            </p>
+
+            <p>
+                <b>⏰ Time:</b>
+                {appointment.appointment_time}
+            </p>
+
+            <p>
+                <b>📝 Reason:</b>
+                {appointment.reason}
+            </p>
+
+            <hr>
+
+            <p style="color:#dc3545;">
+                ⚠️ Please arrive at least 10 minutes before your appointment time.
+            </p>
+
+            <p>
+                If you cannot attend, please contact the hospital or reschedule your appointment.
+            </p>
+
+            <br>
+
+            <p>
+                Thank you for choosing 
+                <b>Healix Hospital</b>.
+            </p>
+
+            <p style="margin-top:30px;">
+                💙 Stay Healthy,<br>
+                <b>Healix Hospital Team</b>
+            </p>
+
+        </div>
+
+    </div>
     """
 
     return send_brevo_email(
         appointment.patient.email,
         appointment.patient.username,
-        "Appointment Reminder - Healix Hospital",
+        "⏰ Reminder: Upcoming Appointment - Healix Hospital",
         html
     )

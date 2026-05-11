@@ -610,6 +610,9 @@ def run_reminders(request):
     target_start = now + timedelta(hours=24)
     target_end = target_start + timedelta(minutes=5)
 
+    print("Current Time:", now)
+    print("Checking Between:", target_start, target_end)
+
     appointments = Appointment.objects.filter(
         status="confirmed",
         reminder_sent=False
@@ -618,6 +621,7 @@ def run_reminders(request):
     sent_count = 0
 
     for appointment in appointments:
+
         appointment_datetime = datetime.combine(
             appointment.appointment_date,
             appointment.appointment_time
@@ -628,7 +632,10 @@ def run_reminders(request):
             timezone.get_current_timezone()
         )
 
+        print("Checking appointment:", appointment.id)
+
         if target_start <= appointment_datetime <= target_end:
+
             try:
                 send_reminder_email(appointment)
 
@@ -637,8 +644,10 @@ def run_reminders(request):
 
                 sent_count += 1
 
+                print("✅ Reminder sent:", appointment.id)
+
             except Exception as e:
-                print("REMINDER ERROR:", e)
+                print("❌ Reminder error:", e)
 
     return HttpResponse(f"Reminder sent: {sent_count}")
 
