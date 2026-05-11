@@ -13,7 +13,7 @@ def send_email(subject, html_content, to_email):
             to=[to_email],
         )
         msg.attach_alternative(html_content, "text/html")
-        result = msg.send(fail_silently=True)
+        result = msg.send(fail_silently=False)
         print("✅ EMAIL SENT:", result)
         return True
     except Exception as e:
