@@ -2,7 +2,7 @@ from django.core.mail import EmailMultiAlternatives, send_mail
 from django.conf import settings
 import traceback
 import random
-
+import requests
 
 def send_email(subject, html_content, to_email):
     try:
@@ -26,17 +26,50 @@ def generate_otp():
     return str(random.randint(100000, 999999))
 
 
+
 def send_registration_otp(email, otp, username):
-    html = f"""
-    <h2>Healix Hospital OTP Verification</h2>
-    <p>Hello {username},</p>
-    <p>Your OTP is:</p>
-    <h1>{otp}</h1>
-    <p>This OTP is valid for 5 minutes.</p>
-    <br>
-    <p>Healix Hospital Team</p>
-    """
-    return send_email("OTP Verification - Healix Hospital", html, email)
+    try:
+        url = "https://api.brevo.com/v3/smtp/email"
+
+        payload = {
+            "sender": {
+                "name": "Healix Hospital",
+                "email": settings.DEFAULT_FROM_EMAIL
+            },
+            "to": [
+                {
+                    "email": email,
+                    "name": username
+                }
+            ],
+            "subject": "OTP Verification - Healix Hospital",
+            "htmlContent": f"""
+                <h2>Healix Hospital OTP Verification</h2>
+                <p>Hello {username},</p>
+                <p>Your OTP is:</p>
+                <h1>{otp}</h1>
+                <p>This OTP is valid for 5 minutes.</p>
+                <br>
+                <p>Healix Hospital Team</p>
+            """
+        }
+
+        headers = {
+            "accept": "application/json",
+            "api-key": settings.BREVO_API_KEY,
+            "content-type": "application/json"
+        }
+
+        response = requests.post(url, json=payload, headers=headers, timeout=10)
+
+        print("BREVO API STATUS:", response.status_code)
+        print("BREVO API RESPONSE:", response.text)
+
+        return response.status_code in [200, 201, 202]
+
+    except Exception as e:
+        print("BREVO API ERROR:", e)
+        return False
 
 
 def send_booking_confirmation_email(appointment):
